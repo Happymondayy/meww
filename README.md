@@ -1,5 +1,11 @@
 # meww
 
+![Swift](https://img.shields.io/badge/Swift-5.0-F05138?style=flat&logo=swift&logoColor=white)
+![SwiftUI](https://img.shields.io/badge/SwiftUI-0058CC?style=flat&logo=swift&logoColor=white)
+![SwiftData](https://img.shields.io/badge/SwiftData-4A90D9?style=flat&logo=swift&logoColor=white)
+![Xcode](https://img.shields.io/badge/Xcode-26.2-147EFB?style=flat&logo=xcode&logoColor=white)
+![MusicKit](https://img.shields.io/badge/MusicKit-Apple-000000?style=flat&logo=apple&logoColor=white)
+
 음악과 독서 기록을 남기고, AI가 취향에 맞는 다음 작품을 추천해주는 iOS 앱입니다.
 
 ## 소개
