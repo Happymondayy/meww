@@ -1,0 +1,8 @@
+# API 키 등 실제 값이 든 파일 — Secrets.example.swift 참고해서 각자 만든다.
+meww/Secrets.swift
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.DS_Store
