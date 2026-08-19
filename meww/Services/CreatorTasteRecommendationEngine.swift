@@ -20,6 +20,9 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var errorMessage: String?
 
+    /// Gemini 429(RESOURCE_EXHAUSTED)를 피하려고 동시에 도는 창작자 요청 수를 제한한다.
+    private static let maxConcurrentRequests = 2
+
     func loadSections(from profile: TasteProfile) async {
         guard !profile.favoriteCreators.isEmpty else {
             sections = []
@@ -34,19 +37,29 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
 
         // 선호 아티스트/저자가 많아도 API 호출이 과도해지지 않도록 상위 5명까지만, 그리고
         // 창작자별로 별도 Gemini/검색 인스턴스를 써서 병렬로 요청한다 — 순서대로 기다리면
-        // 창작자 수만큼 왕복 시간이 그대로 늘어나 화면이 눈에 띄게 느려진다.
+        // 창작자 수만큼 왕복 시간이 그대로 늘어난다. 다만 한꺼번에 다 쏘면 Gemini
+        // 429(RESOURCE_EXHAUSTED)가 자주 나서, 동시에 최대 `maxConcurrentRequests`개까지만
+        // 돌게 제한한다 — 하나가 끝나야 다음 창작자를 시작한다.
         let stats = Array(profile.favoriteCreators.prefix(5))
         var lastErrorMessage: String?
 
         await withTaskGroup(of: (CreatorRecommendationSection?, String?).self) { group in
-            for stat in stats {
+            var pending = stats.makeIterator()
+
+            for _ in 0..<Self.maxConcurrentRequests {
+                guard let stat = pending.next() else { break }
                 group.addTask { await Self.loadSection(for: stat) }
             }
-            for await (section, failureMessage) in group {
+
+            while let (section, failureMessage) = await group.next() {
                 if let section {
                     sections.append(section)
                 } else if let failureMessage {
                     lastErrorMessage = failureMessage
+                }
+
+                if let stat = pending.next() {
+                    group.addTask { await Self.loadSection(for: stat) }
                 }
             }
         }
