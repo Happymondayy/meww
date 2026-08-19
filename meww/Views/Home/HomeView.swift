@@ -27,8 +27,8 @@ struct HomeView: View {
             Section {
                 VStack(alignment: .leading, spacing: 20) {
                     headerSummary
-                    tasteHighlightsSection
                     quickAccessRow
+                    tasteHighlightsSection
                     categoryFilterRow
                 }
                 .listRowInsets(EdgeInsets())

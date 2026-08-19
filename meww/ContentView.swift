@@ -24,11 +24,7 @@ struct ContentView: View {
             }
 
             Tab("캘린더", systemImage: "calendar") {
-                ContentUnavailableView(
-                    "캘린더",
-                    systemImage: "calendar",
-                    description: Text("캘린더 화면은 아직 준비 중이에요.")
-                )
+                CalendarView()
             }
         }
     }
