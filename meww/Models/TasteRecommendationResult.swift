@@ -21,12 +21,14 @@ struct TasteRecommendationItem: Decodable, Identifiable, Hashable {
     let reason: String
 }
 
-/// 화면에 뿌릴 카드 하나 — Gemini가 준 항목 + Apple Music/Google Books에서 찾은 실제 표지.
+/// 화면에 뿌릴 카드 하나 — Gemini가 준 항목 + Apple Music/Google Books에서 찾은 실제 표지·링크.
 struct TasteRecommendationCard: Identifiable {
     var id: String { "\(category.rawValue)-\(item.id)" }
     let item: TasteRecommendationItem
     let category: RecordCategory
     var artworkURL: URL?
+    /// 아직 기록 안 한 추천이라 Apple Music/Google Books 상세 페이지로 대신 연결한다.
+    var linkURL: URL?
 }
 
 extension TasteProfile {

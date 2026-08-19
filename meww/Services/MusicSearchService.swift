@@ -14,6 +14,8 @@ struct MusicSearchResult: Identifiable {
     let title: String
     let artistName: String
     let artworkURL: URL?
+    /// Apple Music 웹/앱 상세 페이지 링크 — 탭하면 여기로 연결한다.
+    let linkURL: URL?
 }
 
 /// Wraps a real Apple Music catalog search via MusicKit. Handled entirely at the
@@ -54,7 +56,8 @@ final class MusicSearchService: ObservableObject {
                     id: song.id.rawValue,
                     title: song.title,
                     artistName: song.artistName,
-                    artworkURL: song.artwork?.url(width: 200, height: 200)
+                    artworkURL: song.artwork?.url(width: 200, height: 200),
+                    linkURL: song.url
                 )
             }
         } catch {

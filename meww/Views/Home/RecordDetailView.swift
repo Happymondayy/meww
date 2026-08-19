@@ -19,10 +19,6 @@ struct RecordDetailView: View {
     @State private var isEditing = false
     @State private var showDeleteConfirmation = false
 
-    private var artworkSize: CGSize {
-        record.category == .book ? CGSize(width: 84, height: 120) : CGSize(width: 96, height: 96)
-    }
-
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
@@ -87,8 +83,10 @@ struct RecordDetailView: View {
         }
     }
 
+    /// 음악·독서 표지 크기를 똑같이 맞춘다 — 책 표지(세로가 긴 원본 비율)를 그대로 두면
+    /// 앨범 아트보다 훨씬 커 보여서 화면 균형이 깨진다.
     private var artwork: some View {
-        RoundedRectangle(cornerRadius: record.category == .book ? 6 : 8)
+        RoundedRectangle(cornerRadius: 8)
             .fill(Color.recordPlaceholderArt)
             .overlay {
                 if let artworkURL = record.artworkURL {
@@ -98,13 +96,13 @@ struct RecordDetailView: View {
                         Image(systemName: record.category.systemImage)
                             .foregroundStyle(.white.opacity(0.85))
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: record.category == .book ? 6 : 8))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
                     Image(systemName: record.category.systemImage)
                         .foregroundStyle(.white.opacity(0.85))
                 }
             }
-            .frame(width: artworkSize.width, height: artworkSize.height)
+            .frame(width: 96, height: 96)
     }
 
     // MARK: - Rating

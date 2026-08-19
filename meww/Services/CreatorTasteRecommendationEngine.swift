@@ -20,10 +20,6 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var errorMessage: String?
 
-    private let gemini = GeminiService()
-    private let musicSearch = MusicSearchService()
-    private let bookSearch = BookSearchService()
-
     func loadSections(from profile: TasteProfile) async {
         guard !profile.favoriteCreators.isEmpty else {
             sections = []
@@ -36,51 +32,82 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
         sections = []
         defer { isLoading = false }
 
-        // 선호 아티스트/저자가 많아도 순차 API 호출이 과도해지지 않도록 상위 5명까지만.
-        for stat in profile.favoriteCreators.prefix(5) {
-            if let section = await loadSection(for: stat) {
-                sections.append(section)
+        // 선호 아티스트/저자가 많아도 API 호출이 과도해지지 않도록 상위 5명까지만, 그리고
+        // 창작자별로 별도 Gemini/검색 인스턴스를 써서 병렬로 요청한다 — 순서대로 기다리면
+        // 창작자 수만큼 왕복 시간이 그대로 늘어나 화면이 눈에 띄게 느려진다.
+        let stats = Array(profile.favoriteCreators.prefix(5))
+        var lastErrorMessage: String?
+
+        await withTaskGroup(of: (CreatorRecommendationSection?, String?).self) { group in
+            for stat in stats {
+                group.addTask { await Self.loadSection(for: stat) }
+            }
+            for await (section, failureMessage) in group {
+                if let section {
+                    sections.append(section)
+                } else if let failureMessage {
+                    lastErrorMessage = failureMessage
+                }
             }
         }
 
         if sections.isEmpty {
-            errorMessage = gemini.errorMessage ?? "취향 추천을 만들지 못했어요. 다시 시도해주세요"
+            errorMessage = lastErrorMessage ?? "취향 추천을 만들지 못했어요. 다시 시도해주세요"
         }
     }
 
-    private func loadSection(for stat: TasteProfile.CreatorStat) async -> CreatorRecommendationSection? {
+    /// 창작자 하나를 처리한다. 매번 새 `GeminiService`/`MusicSearchService`/`BookSearchService`
+    /// 인스턴스를 만드는 이유는, 이 서비스들이 검색 결과를 published 프로퍼티 하나에 담는
+    /// 구조라 여러 창작자가 동시에 같은 인스턴스를 공유하면 서로 결과를 덮어써버리기 때문이다.
+    private static func loadSection(for stat: TasteProfile.CreatorStat) async -> (CreatorRecommendationSection?, String?) {
+        let gemini = GeminiService()
         guard let text = await gemini.generate(prompt: stat.similarRecommendationPrompt()) else {
-            return nil
+            return (nil, gemini.errorMessage)
         }
-        guard let items = try? Self.parse(text), !items.isEmpty else {
-            return nil
+        guard let items = try? parse(text), !items.isEmpty else {
+            return (nil, "추천 형식이 이상해요. 다시 시도해주세요")
         }
 
+        let musicSearch = MusicSearchService()
+        let bookSearch = BookSearchService()
         var cards = items.prefix(4).map { TasteRecommendationCard(item: $0, category: stat.category) }
 
-        // 표지는 하나씩 순서대로 찾는다 — MusicSearchService/BookSearchService는 검색 결과를
-        // published 프로퍼티 하나에 담는 구조라, 동시에 여러 개를 돌리면 서로 덮어써버린다.
+        // 같은 섹션 안의 카드끼리는 순서대로 찾는다 — 위와 같은 이유로 동시에 여러 개를
+        // 돌리면 서로 덮어써버린다. 창작자(섹션)끼리는 서로 다른 인스턴스라 병렬로 돈다.
         for index in cards.indices {
-            cards[index].artworkURL = await fetchArtwork(for: cards[index])
+            let (artworkURL, linkURL) = await fetchArtworkAndLink(
+                for: cards[index],
+                musicSearch: musicSearch,
+                bookSearch: bookSearch
+            )
+            cards[index].artworkURL = artworkURL
+            cards[index].linkURL = linkURL
         }
 
-        return CreatorRecommendationSection(
+        let section = CreatorRecommendationSection(
             creator: stat.creator,
             category: stat.category,
             title: stat.sectionTitle,
             cards: Array(cards)
         )
+        return (section, nil)
     }
 
-    private func fetchArtwork(for card: TasteRecommendationCard) async -> URL? {
+    private static func fetchArtworkAndLink(
+        for card: TasteRecommendationCard,
+        musicSearch: MusicSearchService,
+        bookSearch: BookSearchService
+    ) async -> (artworkURL: URL?, linkURL: URL?) {
         let query = "\(card.item.title) \(card.item.creator)"
         switch card.category {
         case .music:
             await musicSearch.search(query)
-            return musicSearch.results.first?.artworkURL
+            let result = musicSearch.results.first
+            return (result?.artworkURL, result?.linkURL)
         case .book:
             await bookSearch.search(query)
-            return bookSearch.results.first?.coverURL
+            let result = bookSearch.results.first
+            return (result?.coverURL, result?.linkURL)
         }
     }
 
