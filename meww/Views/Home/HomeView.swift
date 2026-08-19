@@ -67,7 +67,7 @@ struct HomeView: View {
         .listStyle(.plain)
         .contentMargins(.horizontal, 24, for: .scrollContent)
         .navigationDestination(isPresented: $showTasteRecommendation) {
-            TasteRecommendationView(engine: tasteEngine)
+            TasteRecommendationView()
         }
         .navigationDestination(isPresented: $showSentenceScrap) {
             SentenceScrapView()
