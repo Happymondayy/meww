@@ -47,11 +47,13 @@ final class TasteRecommendationEngine: ObservableObject {
             var newCards = result.music.map { TasteRecommendationCard(item: $0, category: .music) }
             newCards += result.books.map { TasteRecommendationCard(item: $0, category: .book) }
 
-            // 표지는 하나씩 순서대로 찾는다 — MusicSearchService/BookSearchService는 검색
+            // 표지·링크는 하나씩 순서대로 찾는다 — MusicSearchService/BookSearchService는 검색
             // 결과를 published 프로퍼티 하나에 담는 구조라, 동시에 여러 개를 돌리면
             // 서로 결과를 덮어써버린다.
             for index in newCards.indices {
-                newCards[index].artworkURL = await fetchArtwork(for: newCards[index])
+                let (artworkURL, linkURL) = await fetchArtworkAndLink(for: newCards[index])
+                newCards[index].artworkURL = artworkURL
+                newCards[index].linkURL = linkURL
             }
 
             cards = newCards
@@ -64,15 +66,17 @@ final class TasteRecommendationEngine: ObservableObject {
         isLoading = false
     }
 
-    private func fetchArtwork(for card: TasteRecommendationCard) async -> URL? {
+    private func fetchArtworkAndLink(for card: TasteRecommendationCard) async -> (artworkURL: URL?, linkURL: URL?) {
         let query = "\(card.item.title) \(card.item.creator)"
         switch card.category {
         case .music:
             await musicSearch.search(query)
-            return musicSearch.results.first?.artworkURL
+            let result = musicSearch.results.first
+            return (result?.artworkURL, result?.linkURL)
         case .book:
             await bookSearch.search(query)
-            return bookSearch.results.first?.coverURL
+            let result = bookSearch.results.first
+            return (result?.coverURL, result?.linkURL)
         }
     }
 

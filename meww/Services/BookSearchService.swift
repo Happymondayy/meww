@@ -13,6 +13,8 @@ struct BookSearchResult: Identifiable {
     let title: String
     let authorName: String
     let coverURL: URL?
+    /// Google Books 상세 페이지 링크 — 탭하면 여기로 연결한다.
+    let linkURL: URL?
 }
 
 /// Google Books API(`volumes` 검색)로 실제 책을 검색한다 — `MusicSearchService`와 같은 자리.
@@ -66,15 +68,17 @@ final class BookSearchService: ObservableObject {
 
         return (response.items ?? []).map { item in
             let info = item.volumeInfo
-            // Google Books는 표지 URL을 http로 내려줄 때가 있어 ATS 차단을 피하려 https로 바꾼다.
+            // Google Books는 표지·상세 페이지 URL을 http로 내려줄 때가 있어 ATS 차단을 피하려 https로 바꾼다.
             let thumbnail = (info.imageLinks?.thumbnail ?? info.imageLinks?.smallThumbnail)?
                 .replacingOccurrences(of: "http://", with: "https://")
+            let infoLink = info.infoLink?.replacingOccurrences(of: "http://", with: "https://")
 
             return BookSearchResult(
                 id: item.id,
                 title: info.title,
                 authorName: (info.authors ?? []).joined(separator: ", "),
-                coverURL: thumbnail.flatMap(URL.init(string:))
+                coverURL: thumbnail.flatMap(URL.init(string:)),
+                linkURL: infoLink.flatMap(URL.init(string:))
             )
         }
     }
@@ -93,6 +97,7 @@ private struct VolumeInfo: Decodable {
     let title: String
     let authors: [String]?
     let imageLinks: ImageLinks?
+    let infoLink: String?
 }
 
 private struct ImageLinks: Decodable {
