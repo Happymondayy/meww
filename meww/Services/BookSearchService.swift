@@ -55,6 +55,15 @@ final class BookSearchService: ObservableObject {
         isSearching = false
     }
 
+    /// `search(_:)`와 달리 `results`/`isSearching` 같은 published 상태를 건드리지 않고
+    /// 첫 번째 결과만 돌려준다 — 추천 엔진들이 카드 여러 개의 표지를 동시에 찾을 때, 같은
+    /// 인스턴스를 여러 태스크에서 병렬로 호출해도 서로의 결과를 덮어쓰지 않기 때문이다.
+    func firstResult(for query: String) async -> BookSearchResult? {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !Secrets.googleBooksAPIKey.isEmpty else { return nil }
+        return try? await fetchResults(for: trimmed).first
+    }
+
     private func fetchResults(for query: String) async throws -> [BookSearchResult] {
         var components = URLComponents(string: "https://www.googleapis.com/books/v1/volumes")!
         components.queryItems = [
