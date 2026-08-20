@@ -16,6 +16,9 @@ import UIKit
 /// 독서는 Google Books API(`BookSearchService`)로 검색한다 — `Secrets.googleBooksAPIKey`가
 /// 비어있는 동안은 "제목 직접 입력" 경로로 빠진다.
 struct AddRecordSearchView: View {
+    /// 기본은 오늘이지만, 캘린더 날짜 상세에서 "이 날짜로 기록 추가"로 들어왔다면 그 날짜를 받는다.
+    var recordedAt: Date = .now
+
     @State private var category: RecordCategory = .music
     @State private var query = ""
     @StateObject private var musicSearch = MusicSearchService()
@@ -55,7 +58,13 @@ struct AddRecordSearchView: View {
         .navigationTitle("기록 추가")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $selection) { item in
-            RecordWriteView(category: category, title: item.title, creator: item.creator, artworkURL: item.artworkURL)
+            RecordWriteView(
+                category: category,
+                title: item.title,
+                creator: item.creator,
+                artworkURL: item.artworkURL,
+                recordedAt: recordedAt
+            )
         }
         .task(id: query) {
             try? await Task.sleep(for: .milliseconds(300))

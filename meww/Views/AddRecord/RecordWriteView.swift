@@ -16,6 +16,8 @@ struct RecordWriteView: View {
 
     let category: RecordCategory
     let artworkURL: URL?
+    /// 기본은 오늘이지만, 캘린더에서 특정 날짜로 들어왔다면 그 날짜로 기록을 남긴다.
+    let recordedAt: Date
 
     @State private var title: String
     @State private var creator: String
@@ -28,9 +30,10 @@ struct RecordWriteView: View {
     @State private var recommendedFor = ""
     @State private var didSave = false
 
-    init(category: RecordCategory, title: String, creator: String, artworkURL: URL?) {
+    init(category: RecordCategory, title: String, creator: String, artworkURL: URL?, recordedAt: Date = .now) {
         self.category = category
         self.artworkURL = artworkURL
+        self.recordedAt = recordedAt
         _title = State(initialValue: title)
         _creator = State(initialValue: creator)
         _isEditingItem = State(initialValue: title.isEmpty)
@@ -278,6 +281,7 @@ struct RecordWriteView: View {
             summary: summary.trimmingCharacters(in: .whitespacesAndNewlines),
             recommendedFor: recommendedFor.trimmingCharacters(in: .whitespacesAndNewlines),
             wantsToRevisit: wantsToRevisit ?? false,
+            recordedAt: recordedAt,
             artworkURL: artworkURL
         )
         modelContext.insert(record)

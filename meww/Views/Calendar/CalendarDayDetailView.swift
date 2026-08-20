@@ -15,19 +15,15 @@ struct CalendarDayDetailView: View {
     let records: [Record]
 
     @State private var selectedRecord: Record?
+    @State private var showAddRecord = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             dragHandle
             dateHeader
+            addRecordButton
 
-            if records.isEmpty {
-                Text("이 날은 기록이 없어요")
-                    .font(.footnote)
-                    .foregroundStyle(Color.recordTextSecondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom, 32)
-            } else {
+            if !records.isEmpty {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
@@ -40,12 +36,41 @@ struct CalendarDayDetailView: View {
         .padding(.horizontal, 24)
         .padding(.top, 12)
         .padding(.bottom, 12)
+        // 기록이 있을 땐 ScrollView가 시트 높이를 꽉 채워서 콘텐츠가 항상 위에 붙어 보이지만,
+        // 기록이 없어서 짧은 콘텐츠만 있을 땐 SwiftUI가 그 짧은 콘텐츠를 시트 안에서 세로
+        // 가운데 정렬해버려 위쪽에 큰 여백이 생긴다 — 항상 위쪽에 고정되도록 강제한다.
+        .frame(maxHeight: .infinity, alignment: .top)
         .sheet(item: $selectedRecord) { record in
             RecordDetailView(record: record)
                 .presentationDetents([.fraction(0.72), .large])
                 .presentationDragIndicator(.hidden)
                 .presentationCornerRadius(20)
         }
+        .sheet(isPresented: $showAddRecord) {
+            NavigationStack {
+                AddRecordSearchView(recordedAt: date)
+            }
+        }
+    }
+
+    /// 기록이 있는 날이든 없는 날이든 항상 보인다 — 없는 날엔 첫 기록을, 있는 날엔
+    /// "오늘 하나 더" 추가를 위한 진입점.
+    private var addRecordButton: some View {
+        Button {
+            showAddRecord = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                Text("이 날짜로 기록 추가")
+            }
+            .font(.footnote)
+            .fontWeight(.semibold)
+            .foregroundStyle(Color.recordFilterInactiveText)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
     }
 
     private var dragHandle: some View {
