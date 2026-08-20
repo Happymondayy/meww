@@ -258,6 +258,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "음악 기록을 검색하고 추가하기 위해 Apple Music에 접근해요.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "책 문장을 사진으로 찍어서 인식하기 위해 카메라에 접근해요.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -292,6 +293,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "음악 기록을 검색하고 추가하기 위해 Apple Music에 접근해요.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "책 문장을 사진으로 찍어서 인식하기 위해 카메라에 접근해요.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

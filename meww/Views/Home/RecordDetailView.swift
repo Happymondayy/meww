@@ -186,7 +186,8 @@ struct RecordDetailView: View {
             fieldSection(
                 label: record.category == .music ? "가장 인상 깊은 가사나 순간" : "인상 깊었던 문장",
                 text: $record.comment,
-                showsScrapToggle: true
+                showsScrapToggle: true,
+                showsPhotoScan: record.category == .book
             )
             if record.category == .book {
                 fieldSection(label: "한 문장 요약", text: $record.summary)
@@ -195,13 +196,31 @@ struct RecordDetailView: View {
         }
     }
 
-    private func fieldSection(label: String, text: Binding<String>, showsScrapToggle: Bool = false) -> some View {
+    private func fieldSection(
+        label: String,
+        text: Binding<String>,
+        showsScrapToggle: Bool = false,
+        showsPhotoScan: Bool = false
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
                 Text(label)
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.recordTextSecondary)
+
+                // 물리책엔 복사 버튼이 없어서 사진으로 찍은/고른 페이지에서 문장을 읽어오는
+                // 도구를 책에만 둔다 — 편집 중일 때만 의미가 있다.
+                if isEditing && showsPhotoScan {
+                    PhotoTextScanButton { recognizedText in
+                        if text.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            text.wrappedValue = recognizedText
+                        } else {
+                            text.wrappedValue += "\n" + recognizedText
+                        }
+                    }
+                }
+
                 if showsScrapToggle {
                     // 체크하면 "문장 스크랩" 화면에 모인다 — comment가 채워졌다고
                     // 자동으로 스크랩되지 않는다.
@@ -223,8 +242,11 @@ struct RecordDetailView: View {
                 TextField("", text: text, axis: .vertical)
                     .font(.subheadline)
                     .foregroundStyle(Color.recordTextPrimary)
-                    .lineLimit(2...6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // 최대 줄 수를 걸면 그 이상은 필드 안에서 자체 스크롤해야 하는데, 이 필드가
+                    // 바깥 ScrollView 안에 있어서 안쪽 스크롤 제스처가 먹혀 내용이 안 보이게
+                    // 된다(사진에서 텍스트를 긁어오면 특히 잘 넘침) — 최소 높이만 잡고 무제한으로
+                    // 늘어나게 둔다.
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .topLeading)
                     .padding(12)
                     .background(Color.recordFieldBackground, in: RoundedRectangle(cornerRadius: 8))
             } else {

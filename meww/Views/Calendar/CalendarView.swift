@@ -278,7 +278,10 @@ private struct MonthYearPickerView: View {
             HStack(spacing: 0) {
                 Picker("연도", selection: $year) {
                     ForEach(years, id: \.self) { year in
-                        Text("\(year)년").tag(year)
+                        // `Text("\(year)년")`처럼 Int를 문자열보간하면 LocalizedStringKey가
+                        // 로케일의 자릿수 구분 기호를 적용해버려 "2,026년"처럼 나온다 —
+                        // verbatim으로 그 서식을 건너뛴다.
+                        Text(verbatim: "\(year)년").tag(year)
                     }
                 }
                 .pickerStyle(.wheel)

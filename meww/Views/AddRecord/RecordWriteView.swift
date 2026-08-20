@@ -192,6 +192,19 @@ struct RecordWriteView: View {
 
                 Spacer()
 
+                // 물리책엔 복사 버튼이 없어서 사진으로 찍은/고른 페이지에서 문장을 읽어오는
+                // 도구를 책에만 둔다 — 음악 가사는 앱 안에서 보고 있는 걸 복사·붙여넣기 하는
+                // 게 더 자연스럽다.
+                if category == .book {
+                    PhotoTextScanButton { recognizedText in
+                        if comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            comment = recognizedText
+                        } else {
+                            comment += "\n" + recognizedText
+                        }
+                    }
+                }
+
                 // 체크하면 이 문장이 "문장 스크랩" 화면에 모인다 — comment가 채워졌다고
                 // 자동으로 스크랩되지 않는다.
                 Button {
@@ -212,7 +225,10 @@ struct RecordWriteView: View {
                 axis: .vertical
             )
             .font(.subheadline)
-            .lineLimit(3...6)
+            // 최대 줄 수를 걸어두면 그 이상은 필드 안에서 자체 스크롤해야 하는데, 이 필드가
+            // 바깥 ScrollView 안에 있어서 안쪽 스크롤 제스처가 먹혀 내용이 안 보이게 된다
+            // (사진에서 텍스트를 긁어오면 특히 잘 넘침) — 최소 높이만 잡고 무제한으로 늘어나게 둔다.
+            .frame(minHeight: 60, alignment: .top)
             .padding(12)
             .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
         }
@@ -243,7 +259,7 @@ struct RecordWriteView: View {
 
             TextField(placeholder, text: text, axis: .vertical)
                 .font(.subheadline)
-                .lineLimit(3...6)
+                .frame(minHeight: 60, alignment: .top)
                 .padding(12)
                 .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
         }
