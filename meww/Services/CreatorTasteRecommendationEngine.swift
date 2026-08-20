@@ -20,6 +20,23 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var errorMessage: String?
 
+    /// 마지막으로 추천을 받았을 때의 전체 기록 수 — 이 값과 현재 기록 수가 다르면 캐시를
+    /// 오래된 것으로 보고 자동으로 다시 추천을 받는다.
+    private var cachedRecordCount: Int?
+
+    private static let cacheKey = "creatorTasteRecommendationCache"
+
+    init() {
+        loadCache()
+    }
+
+    /// 앱을 껐다 켜거나 "더보기"에 다시 들어와도 캐시를 먼저 보여주고, 그 이후 기록이
+    /// 추가·삭제돼 캐시가 안 맞을 때만 자동으로 다시 추천을 받는다.
+    func loadSectionsIfNeeded(from profile: TasteProfile) async {
+        guard cachedRecordCount != profile.totalCount else { return }
+        await loadSections(from: profile)
+    }
+
     func loadSections(from profile: TasteProfile) async {
         guard !profile.favoriteCreators.isEmpty else {
             sections = []
@@ -29,7 +46,6 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
 
         isLoading = true
         errorMessage = nil
-        sections = []
         defer { isLoading = false }
 
         // 창작자별로 Gemini를 따로 부르면(예전 방식) 창작자 수만큼 왕복 시간이 그대로
@@ -39,6 +55,8 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
         let gemini = GeminiService()
 
         guard let text = await gemini.generate(prompt: stats.combinedSimilarRecommendationPrompt()) else {
+            // 실패해도 기존 sections(캐시)는 그대로 둔다 — 백그라운드 자동 갱신이 실패했다고
+            // 화면에 이미 떠 있던 카드를 지울 이유는 없다.
             errorMessage = gemini.errorMessage ?? "취향 추천을 만들지 못했어요. 다시 시도해주세요"
             return
         }
@@ -50,20 +68,26 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
 
         // Gemini 응답의 sections 배열은 프롬프트에 나열한 순서와 대응한다 — zip으로 개수가
         // 안 맞아도(응답이 일부 누락돼도) 안전하게 앞에서부터 짝지운다.
+        var newSections: [CreatorRecommendationSection] = []
         await withTaskGroup(of: CreatorRecommendationSection?.self) { group in
             for (stat, items) in zip(stats, itemSections) {
                 group.addTask { await Self.buildSection(for: stat, items: items) }
             }
             for await section in group {
                 if let section {
-                    sections.append(section)
+                    newSections.append(section)
                 }
             }
         }
 
-        if sections.isEmpty {
+        guard !newSections.isEmpty else {
             errorMessage = "취향 추천을 만들지 못했어요. 다시 시도해주세요"
+            return
         }
+
+        sections = newSections
+        cachedRecordCount = profile.totalCount
+        saveCache(recordCount: profile.totalCount)
     }
 
     /// 창작자 하나의 섹션을 만든다. 카드 표지·링크 검색만 여기서 창작자별로 병렬로 돈다.
@@ -143,5 +167,27 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
 
     private enum ParseError: Error {
         case noJSONFound
+    }
+
+    // MARK: - Cache
+
+    private struct CachedSections: Codable {
+        let sections: [CreatorRecommendationSection]
+        let recordCount: Int
+    }
+
+    private func loadCache() {
+        guard
+            let data = UserDefaults.standard.data(forKey: Self.cacheKey),
+            let cached = try? JSONDecoder().decode(CachedSections.self, from: data)
+        else { return }
+        sections = cached.sections
+        cachedRecordCount = cached.recordCount
+    }
+
+    private func saveCache(recordCount: Int) {
+        let cached = CachedSections(sections: sections, recordCount: recordCount)
+        guard let data = try? JSONEncoder().encode(cached) else { return }
+        UserDefaults.standard.set(data, forKey: Self.cacheKey)
     }
 }

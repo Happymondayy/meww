@@ -92,6 +92,12 @@ struct HomeView: View {
                 .presentationDragIndicator(.hidden)
                 .presentationCornerRadius(20)
         }
+        // 홈 탭은 앱 안에서 계속 살아있는 뷰라 다른 탭에서 기록을 추가하고 돌아와도
+        // `.task`는 다시 안 불린다 — `.onAppear`는 탭을 다시 보여줄 때마다 불려서, 그 사이
+        // 기록이 늘었으면(캐시가 오래됐으면) 자동으로 최신 추천으로 갱신된다.
+        .onAppear {
+            Task { await tasteEngine.loadIfNeeded(from: records) }
+        }
     }
 
     // MARK: - Header
@@ -158,7 +164,9 @@ struct HomeView: View {
                 .buttonStyle(.borderless)
             }
 
-            if tasteEngine.isLoading {
+            // 카드가 이미 있으면(캐시에서 불러왔거나 이전 결과) 백그라운드 갱신 중에도
+            // 계속 보여준다 — 로딩 스피너는 카드가 하나도 없을 때만 뜬다.
+            if tasteEngine.isLoading && tasteEngine.cards.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: 96)
             } else if tasteEngine.cards.isEmpty {
