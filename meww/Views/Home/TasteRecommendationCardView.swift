@@ -57,17 +57,13 @@ struct TasteRecommendationCardView: View {
         .buttonStyle(.plain)
     }
 
-    /// 앨범 아트(정사각형)와 책 표지(세로로 긴 원본 비율)를 같은 96×96 박스에 담되,
-    /// `scaledToFill`을 쓰면 세로로 긴 책 표지가 양옆이 크게 잘려나가 음악보다 "확대돼
-    /// 보이는" 느낌을 준다. `scaledToFit`으로 통일해 두 카테고리 모두 표지 전체가 그대로
-    /// 보이게 하고, 남는 여백은 플레이스홀더 배경색이 채운다.
     private var artwork: some View {
         RoundedRectangle(cornerRadius: 10)
             .fill(Color.recordPlaceholderArt)
             .overlay {
                 if let artworkURL = card.artworkURL {
                     AsyncImage(url: artworkURL) { image in
-                        image.resizable().scaledToFit()
+                        image.resizable().scaledToFill()
                     } placeholder: {
                         Image(systemName: card.category.systemImage)
                             .foregroundStyle(.white.opacity(0.85))

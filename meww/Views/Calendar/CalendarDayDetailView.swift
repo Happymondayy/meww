@@ -8,10 +8,13 @@
 import SwiftUI
 
 /// 캘린더에서 날짜를 탭했을 때 뜨는 바텀시트 — Figma node 143:2의 하단 시트 부분.
-/// 그 날 기록한 항목들을 시간순 타임라인으로 보여준다.
+/// 그 날 기록한 항목들을 시간순 타임라인으로 보여준다. 항목을 탭하면 홈 화면의
+/// `RecordRowView`와 똑같이 `RecordDetailView`가 뜬다.
 struct CalendarDayDetailView: View {
     let date: Date
     let records: [Record]
+
+    @State private var selectedRecord: Record?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -23,7 +26,7 @@ struct CalendarDayDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(Color.recordTextSecondary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 32)
+                    .padding(.bottom, 32)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
@@ -37,6 +40,12 @@ struct CalendarDayDetailView: View {
         .padding(.horizontal, 24)
         .padding(.top, 12)
         .padding(.bottom, 12)
+        .sheet(item: $selectedRecord) { record in
+            RecordDetailView(record: record)
+                .presentationDetents([.fraction(0.72), .large])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(20)
+        }
     }
 
     private var dragHandle: some View {
@@ -79,49 +88,54 @@ struct CalendarDayDetailView: View {
             .frame(width: 16)
             .padding(.top, 6)
 
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.recordPlaceholderArt)
-                    .overlay {
-                        if let artworkURL = record.artworkURL {
-                            AsyncImage(url: artworkURL) { image in
-                                image.resizable().scaledToFit()
-                            } placeholder: {
+            Button {
+                selectedRecord = record
+            } label: {
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.recordPlaceholderArt)
+                        .overlay {
+                            if let artworkURL = record.artworkURL {
+                                AsyncImage(url: artworkURL) { image in
+                                    image.resizable().scaledToFill()
+                                } placeholder: {
+                                    Image(systemName: record.category.systemImage)
+                                        .foregroundStyle(.white.opacity(0.85))
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
                                 Image(systemName: record.category.systemImage)
                                     .foregroundStyle(.white.opacity(0.85))
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                        } else {
-                            Image(systemName: record.category.systemImage)
-                                .foregroundStyle(.white.opacity(0.85))
                         }
-                    }
-                    .frame(width: 48, height: 48)
+                        .frame(width: 48, height: 48)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(record.title)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.recordTextPrimary)
-                        .lineLimit(1)
-                    Text(record.creator)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(record.title)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.recordTextPrimary)
+                            .lineLimit(1)
+                        Text(record.creator)
+                            .font(.caption2)
+                            .foregroundStyle(Color.recordTextSecondary)
+                            .lineLimit(1)
+                        Text(record.ratingStars)
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(Color.recordRatingGold)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Text(record.recordedAtTimeCompact)
                         .font(.caption2)
                         .foregroundStyle(Color.recordTextSecondary)
-                        .lineLimit(1)
-                    Text(record.ratingStars)
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.recordRatingGold)
                 }
-
-                Spacer(minLength: 8)
-
-                Text(record.recordedAtTimeCompact)
-                    .font(.caption2)
-                    .foregroundStyle(Color.recordTextSecondary)
+                .padding(12)
+                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 12))
             }
-            .padding(12)
-            .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 12))
+            .buttonStyle(.plain)
         }
         .padding(.bottom, isLast ? 0 : 14)
     }

@@ -12,13 +12,18 @@ import SwiftData
 ///
 /// 월별 리스트(HomeView)만으로는 날짜 경계가 안 보여서 기록이 실제보다 많아 보인다는 피드백이
 /// 있었다 — 이 화면은 요일별 그리드로 날짜 경계를 보여주고, 기록이 있는 날엔 카테고리별 점을
-/// 찍어 한눈에 훑을 수 있게 한다. Figma엔 없지만 여러 달을 오갈 방법이 필요해서 월 제목 옆에
-/// 이전/다음 버튼을 추가했다 — Figma의 "마이" 버튼은 아직 프로필 화면이 없어 뺐다.
+/// 찍어 한눈에 훑을 수 있게 한다. Figma엔 없지만 여러 달을 오갈 방법이 필요해서 월 제목을
+/// 탭하면 연/월 피커가 뜨고, 옆에 이전/다음 버튼도 뒀다 — Figma의 "마이" 버튼은 아직 프로필
+/// 화면이 없어 뺐다.
 struct CalendarView: View {
     @Query private var records: [Record]
 
     @State private var displayedMonth = Calendar.current.dateInterval(of: .month, for: .now)?.start ?? .now
-    @State private var selectedDay: SelectedDay?
+    /// 그리드에서 검게 강조되는 날짜 — 처음엔 오늘이 기본으로 강조돼 있다. 날짜를 탭하면
+    /// 그 날로 옮겨가면서 동시에 상세 시트(`presentedDay`)도 뜬다.
+    @State private var highlightedDate = Calendar.current.startOfDay(for: .now)
+    @State private var presentedDay: SelectedDay?
+    @State private var showMonthPicker = false
 
     private let calendar = Calendar.current
     private let weekdaySymbols = ["일", "월", "화", "수", "목", "금", "토"]
@@ -35,11 +40,15 @@ struct CalendarView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, 8)
-        .sheet(item: $selectedDay) { day in
+        .sheet(item: $presentedDay) { day in
             CalendarDayDetailView(date: day.date, records: recordsForDay(day.date))
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.hidden)
                 .presentationCornerRadius(24)
+        }
+        .sheet(isPresented: $showMonthPicker) {
+            MonthYearPickerView(selection: $displayedMonth)
+                .presentationDetents([.height(280)])
         }
     }
 
@@ -47,11 +56,24 @@ struct CalendarView: View {
 
     private var header: some View {
         HStack {
-            Text(displayedMonth.koreanMonthTitle)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.recordTextPrimary)
+            Button {
+                showMonthPicker = true
+            } label: {
+                HStack(spacing: 4) {
+                    Text(displayedMonth.koreanMonthTitle)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.recordTextPrimary)
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.recordTextSecondary)
+                }
+            }
+            .buttonStyle(.plain)
+
             Spacer()
+
             HStack(spacing: 4) {
                 Button {
                     changeMonth(by: -1)
@@ -166,10 +188,11 @@ struct CalendarView: View {
     private func dayCell(_ date: Date?) -> some View {
         if let date {
             let dayRecords = recordsForDay(date)
-            let isSelected = selectedDay.map { calendar.isDate($0.date, inSameDayAs: date) } ?? false
+            let isSelected = calendar.isDate(highlightedDate, inSameDayAs: date)
 
             Button {
-                selectedDay = SelectedDay(date: date)
+                highlightedDate = date
+                presentedDay = SelectedDay(date: date)
             } label: {
                 VStack(spacing: 3) {
                     Text("\(calendar.component(.day, from: date))")
@@ -178,7 +201,7 @@ struct CalendarView: View {
                     dotsRow(for: dayRecords, isSelected: isSelected)
                 }
                 .frame(width: 50, height: 42)
-                .background(isSelected ? Color.recordTextPrimary : .clear, in: Circle())
+                .background(isSelected ? Color.recordTextPrimary : .clear, in: RoundedRectangle(cornerRadius: 21))
             }
             .buttonStyle(.plain)
         } else {
@@ -211,6 +234,74 @@ struct CalendarView: View {
 private struct SelectedDay: Identifiable {
     let date: Date
     var id: Date { date }
+}
+
+/// 월 제목을 탭하면 뜨는 연/월 피커 — 이전/다음 버튼으로 한 달씩만 옮기는 대신 멀리 있는
+/// 달로 바로 이동할 방법이 필요해서 추가했다.
+private struct MonthYearPickerView: View {
+    @Binding var selection: Date
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var year: Int
+    @State private var month: Int
+
+    private let years: [Int]
+
+    init(selection: Binding<Date>) {
+        _selection = selection
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month], from: selection.wrappedValue)
+        _year = State(initialValue: components.year ?? calendar.component(.year, from: .now))
+        _month = State(initialValue: components.month ?? calendar.component(.month, from: .now))
+
+        let currentYear = calendar.component(.year, from: .now)
+        years = Array((currentYear - 5)...(currentYear + 5))
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("월 선택")
+                    .font(.headline)
+                    .foregroundStyle(Color.recordTextPrimary)
+                Spacer()
+                Button("완료") {
+                    apply()
+                    dismiss()
+                }
+                .fontWeight(.semibold)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 4)
+
+            HStack(spacing: 0) {
+                Picker("연도", selection: $year) {
+                    ForEach(years, id: \.self) { year in
+                        Text("\(year)년").tag(year)
+                    }
+                }
+                .pickerStyle(.wheel)
+
+                Picker("월", selection: $month) {
+                    ForEach(1...12, id: \.self) { month in
+                        Text("\(month)월").tag(month)
+                    }
+                }
+                .pickerStyle(.wheel)
+            }
+        }
+    }
+
+    private func apply() {
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = 1
+        if let newDate = Calendar.current.date(from: components) {
+            selection = newDate
+        }
+    }
 }
 
 #Preview {
