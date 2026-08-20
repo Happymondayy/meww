@@ -47,13 +47,21 @@ final class TasteRecommendationEngine: ObservableObject {
             var newCards = result.music.map { TasteRecommendationCard(item: $0, category: .music) }
             newCards += result.books.map { TasteRecommendationCard(item: $0, category: .book) }
 
-            // 표지·링크는 하나씩 순서대로 찾는다 — MusicSearchService/BookSearchService는 검색
-            // 결과를 published 프로퍼티 하나에 담는 구조라, 동시에 여러 개를 돌리면
-            // 서로 결과를 덮어써버린다.
-            for index in newCards.indices {
-                let (artworkURL, linkURL) = await fetchArtworkAndLink(for: newCards[index])
-                newCards[index].artworkURL = artworkURL
-                newCards[index].linkURL = linkURL
+            // 표지·링크는 카드마다 동시에 찾는다 — fetchArtworkAndLink는 published 상태를
+            // 건드리지 않는 firstResult(for:)를 쓰기 때문에 병렬로 돌려도 서로 덮어쓰지 않는다.
+            await withTaskGroup(of: (Int, URL?, URL?).self) { group in
+                for index in newCards.indices {
+                    let card = newCards[index]
+                    group.addTask { [weak self] in
+                        guard let self else { return (index, nil, nil) }
+                        let (artworkURL, linkURL) = await self.fetchArtworkAndLink(for: card)
+                        return (index, artworkURL, linkURL)
+                    }
+                }
+                for await (index, artworkURL, linkURL) in group {
+                    newCards[index].artworkURL = artworkURL
+                    newCards[index].linkURL = linkURL
+                }
             }
 
             cards = newCards
@@ -70,12 +78,10 @@ final class TasteRecommendationEngine: ObservableObject {
         let query = "\(card.item.title) \(card.item.creator)"
         switch card.category {
         case .music:
-            await musicSearch.search(query)
-            let result = musicSearch.results.first
+            let result = await musicSearch.firstResult(for: query)
             return (result?.artworkURL, result?.linkURL)
         case .book:
-            await bookSearch.search(query)
-            let result = bookSearch.results.first
+            let result = await bookSearch.firstResult(for: query)
             return (result?.coverURL, result?.linkURL)
         }
     }

@@ -11,17 +11,14 @@ import Combine
 /// "취향 추천 전체보기" 화면의 아티스트/저자별 섹션을 만든다.
 ///
 /// `TasteRecommendationEngine`은 취향 전체를 한 번에 묶어 음악 5개·책 5개를 추천받지만,
-/// 여기서는 `TasteProfile.favoriteCreators`를 하나씩 순회하면서 "이 아티스트/저자와 비슷한
-/// 추천"을 카테고리별로 나눠서 요청한다 — 그래야 "OO 선호" 섹션마다 그 아티스트/저자와
-/// 실제로 관련 있는 카드만 모인다.
+/// 여기서는 `TasteProfile.favoriteCreators` 상위 5명을 한 프롬프트에 묶어 "이 아티스트/저자와
+/// 비슷한 추천"을 창작자별로 나눠서 한 번에 요청한다 — 그래야 "OO 선호" 섹션마다 그
+/// 아티스트/저자와 실제로 관련 있는 카드만 모이면서도 Gemini 왕복은 한 번으로 끝난다.
 @MainActor
 final class CreatorTasteRecommendationEngine: ObservableObject {
     @Published private(set) var sections: [CreatorRecommendationSection] = []
     @Published private(set) var isLoading = false
     @Published private(set) var errorMessage: String?
-
-    /// Gemini 429(RESOURCE_EXHAUSTED)를 피하려고 동시에 도는 창작자 요청 수를 제한한다.
-    private static let maxConcurrentRequests = 2
 
     func loadSections(from profile: TasteProfile) async {
         guard !profile.favoriteCreators.isEmpty else {
@@ -35,75 +32,78 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
         sections = []
         defer { isLoading = false }
 
-        // 선호 아티스트/저자가 많아도 API 호출이 과도해지지 않도록 상위 5명까지만, 그리고
-        // 창작자별로 별도 Gemini/검색 인스턴스를 써서 병렬로 요청한다 — 순서대로 기다리면
-        // 창작자 수만큼 왕복 시간이 그대로 늘어난다. 다만 한꺼번에 다 쏘면 Gemini
-        // 429(RESOURCE_EXHAUSTED)가 자주 나서, 동시에 최대 `maxConcurrentRequests`개까지만
-        // 돌게 제한한다 — 하나가 끝나야 다음 창작자를 시작한다.
+        // 창작자별로 Gemini를 따로 부르면(예전 방식) 창작자 수만큼 왕복 시간이 그대로
+        // 늘어난다 — 상위 5명을 한 프롬프트에 묶어서 Gemini는 딱 한 번만 부른다. 창작자별
+        // 카드 표지·링크 검색만 아래에서 병렬로 돈다.
         let stats = Array(profile.favoriteCreators.prefix(5))
-        var lastErrorMessage: String?
+        let gemini = GeminiService()
 
-        await withTaskGroup(of: (CreatorRecommendationSection?, String?).self) { group in
-            var pending = stats.makeIterator()
+        guard let text = await gemini.generate(prompt: stats.combinedSimilarRecommendationPrompt()) else {
+            errorMessage = gemini.errorMessage ?? "취향 추천을 만들지 못했어요. 다시 시도해주세요"
+            return
+        }
 
-            for _ in 0..<Self.maxConcurrentRequests {
-                guard let stat = pending.next() else { break }
-                group.addTask { await Self.loadSection(for: stat) }
+        guard let itemSections = try? Self.parse(text), !itemSections.isEmpty else {
+            errorMessage = "추천 형식이 이상해요. 다시 시도해주세요"
+            return
+        }
+
+        // Gemini 응답의 sections 배열은 프롬프트에 나열한 순서와 대응한다 — zip으로 개수가
+        // 안 맞아도(응답이 일부 누락돼도) 안전하게 앞에서부터 짝지운다.
+        await withTaskGroup(of: CreatorRecommendationSection?.self) { group in
+            for (stat, items) in zip(stats, itemSections) {
+                group.addTask { await Self.buildSection(for: stat, items: items) }
             }
-
-            while let (section, failureMessage) = await group.next() {
+            for await section in group {
                 if let section {
                     sections.append(section)
-                } else if let failureMessage {
-                    lastErrorMessage = failureMessage
-                }
-
-                if let stat = pending.next() {
-                    group.addTask { await Self.loadSection(for: stat) }
                 }
             }
         }
 
         if sections.isEmpty {
-            errorMessage = lastErrorMessage ?? "취향 추천을 만들지 못했어요. 다시 시도해주세요"
+            errorMessage = "취향 추천을 만들지 못했어요. 다시 시도해주세요"
         }
     }
 
-    /// 창작자 하나를 처리한다. 매번 새 `GeminiService`/`MusicSearchService`/`BookSearchService`
-    /// 인스턴스를 만드는 이유는, 이 서비스들이 검색 결과를 published 프로퍼티 하나에 담는
-    /// 구조라 여러 창작자가 동시에 같은 인스턴스를 공유하면 서로 결과를 덮어써버리기 때문이다.
-    private static func loadSection(for stat: TasteProfile.CreatorStat) async -> (CreatorRecommendationSection?, String?) {
-        let gemini = GeminiService()
-        guard let text = await gemini.generate(prompt: stat.similarRecommendationPrompt()) else {
-            return (nil, gemini.errorMessage)
-        }
-        guard let items = try? parse(text), !items.isEmpty else {
-            return (nil, "추천 형식이 이상해요. 다시 시도해주세요")
-        }
+    /// 창작자 하나의 섹션을 만든다. 카드 표지·링크 검색만 여기서 창작자별로 병렬로 돈다.
+    private static func buildSection(
+        for stat: TasteProfile.CreatorStat,
+        items: [TasteRecommendationItem]
+    ) async -> CreatorRecommendationSection? {
+        guard !items.isEmpty else { return nil }
 
         let musicSearch = MusicSearchService()
         let bookSearch = BookSearchService()
         var cards = items.prefix(4).map { TasteRecommendationCard(item: $0, category: stat.category) }
 
-        // 같은 섹션 안의 카드끼리는 순서대로 찾는다 — 위와 같은 이유로 동시에 여러 개를
-        // 돌리면 서로 덮어써버린다. 창작자(섹션)끼리는 서로 다른 인스턴스라 병렬로 돈다.
-        for index in cards.indices {
-            let (artworkURL, linkURL) = await fetchArtworkAndLink(
-                for: cards[index],
-                musicSearch: musicSearch,
-                bookSearch: bookSearch
-            )
-            cards[index].artworkURL = artworkURL
-            cards[index].linkURL = linkURL
+        // 같은 섹션 안의 카드끼리도 동시에 찾는다 — fetchArtworkAndLink가 published 상태를
+        // 건드리지 않는 firstResult(for:)를 쓰기 때문에 병렬로 돌려도 서로 덮어쓰지 않는다.
+        // 창작자(섹션)끼리는 이미 서로 다른 인스턴스라 병렬로 돈다.
+        await withTaskGroup(of: (Int, URL?, URL?).self) { group in
+            for index in cards.indices {
+                let card = cards[index]
+                group.addTask {
+                    let (artworkURL, linkURL) = await fetchArtworkAndLink(
+                        for: card,
+                        musicSearch: musicSearch,
+                        bookSearch: bookSearch
+                    )
+                    return (index, artworkURL, linkURL)
+                }
+            }
+            for await (index, artworkURL, linkURL) in group {
+                cards[index].artworkURL = artworkURL
+                cards[index].linkURL = linkURL
+            }
         }
 
-        let section = CreatorRecommendationSection(
+        return CreatorRecommendationSection(
             creator: stat.creator,
             category: stat.category,
             title: stat.sectionTitle,
             cards: Array(cards)
         )
-        return (section, nil)
     }
 
     private static func fetchArtworkAndLink(
@@ -114,19 +114,17 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
         let query = "\(card.item.title) \(card.item.creator)"
         switch card.category {
         case .music:
-            await musicSearch.search(query)
-            let result = musicSearch.results.first
+            let result = await musicSearch.firstResult(for: query)
             return (result?.artworkURL, result?.linkURL)
         case .book:
-            await bookSearch.search(query)
-            let result = bookSearch.results.first
+            let result = await bookSearch.firstResult(for: query)
             return (result?.coverURL, result?.linkURL)
         }
     }
 
     /// Gemini가 ```json ... ``` 코드블록이나 설명 문장을 앞뒤로 붙이는 경우가 있어서,
     /// 첫 "{"부터 마지막 "}"까지만 잘라내고 그 부분만 파싱한다.
-    private static func parse(_ text: String) throws -> [TasteRecommendationItem] {
+    private static func parse(_ text: String) throws -> [[TasteRecommendationItem]] {
         guard
             let start = text.firstIndex(of: "{"),
             let end = text.lastIndex(of: "}"),
@@ -139,7 +137,8 @@ final class CreatorTasteRecommendationEngine: ObservableObject {
             throw ParseError.noJSONFound
         }
 
-        return try JSONDecoder().decode(SimilarRecommendationResult.self, from: data).items
+        let decoded = try JSONDecoder().decode(CombinedSimilarRecommendationResult.self, from: data)
+        return decoded.sections.map { $0.items }
     }
 
     private enum ParseError: Error {

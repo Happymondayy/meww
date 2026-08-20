@@ -67,4 +67,28 @@ final class MusicSearchService: ObservableObject {
 
         isSearching = false
     }
+
+    /// `search(_:)`와 달리 `results`/`isSearching` 같은 published 상태를 건드리지 않고
+    /// 첫 번째 결과만 돌려준다 — 추천 엔진들이 카드 여러 개의 표지를 동시에 찾을 때, 같은
+    /// 인스턴스를 여러 태스크에서 병렬로 호출해도 서로의 결과를 덮어쓰지 않기 때문이다.
+    func firstResult(for query: String) async -> MusicSearchResult? {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if MusicAuthorization.currentStatus != .authorized {
+            guard await MusicAuthorization.request() == .authorized else { return nil }
+        }
+
+        var request = MusicCatalogSearchRequest(term: trimmed, types: [Song.self])
+        request.limit = 15
+        guard let song = try? await request.response().songs.first else { return nil }
+
+        return MusicSearchResult(
+            id: song.id.rawValue,
+            title: song.title,
+            artistName: song.artistName,
+            artworkURL: song.artwork?.url(width: 200, height: 200),
+            linkURL: song.url
+        )
+    }
 }
