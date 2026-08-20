@@ -9,7 +9,7 @@ import Foundation
 
 /// "취향 추천 전체보기" — Figma node 165:2에서 아티스트/저자별로 반복되는 섹션 하나.
 /// 카드들은 사용자가 실제로 기록한 항목이 아니라, `creator`와 비슷한 새로운 추천이다.
-struct CreatorRecommendationSection: Identifiable {
+struct CreatorRecommendationSection: Identifiable, Codable {
     var id: String { "\(category.rawValue)-\(creator)" }
     let creator: String
     let category: RecordCategory

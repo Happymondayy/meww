@@ -14,7 +14,9 @@ struct TasteRecommendationResult: Decodable {
     let books: [TasteRecommendationItem]
 }
 
-struct TasteRecommendationItem: Decodable, Identifiable, Hashable {
+/// `Codable`인 이유: 홈/더보기 둘 다 마지막 추천 결과를 `UserDefaults`에 캐싱해서 앱을
+/// 껐다 켜도 바로 보여주기 때문 — Gemini 응답 디코딩(`Decodable`)과 캐시 저장(`Encodable`)에 같이 쓴다.
+struct TasteRecommendationItem: Codable, Identifiable, Hashable {
     var id: String { title + creator }
     let title: String
     let creator: String
@@ -22,7 +24,7 @@ struct TasteRecommendationItem: Decodable, Identifiable, Hashable {
 }
 
 /// 화면에 뿌릴 카드 하나 — Gemini가 준 항목 + Apple Music/Google Books에서 찾은 실제 표지·링크.
-struct TasteRecommendationCard: Identifiable {
+struct TasteRecommendationCard: Identifiable, Codable {
     var id: String { "\(category.rawValue)-\(item.id)" }
     let item: TasteRecommendationItem
     let category: RecordCategory

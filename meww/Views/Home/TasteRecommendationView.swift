@@ -36,7 +36,7 @@ struct TasteRecommendationView: View {
         .navigationTitle("취향 추천")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await creatorEngine.loadSections(from: profile)
+            await creatorEngine.loadSectionsIfNeeded(from: profile)
         }
     }
 
