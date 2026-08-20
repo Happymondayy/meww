@@ -15,6 +15,7 @@ import SwiftData
 /// 여기는 제목·아티스트로 찾는 "찾아보기" 역할을 맡는다 — 그래서 검색이 이 화면에만 있다.
 struct AllRecordsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Record.recordedAt, order: .reverse) private var records: [Record]
 
     @State private var selectedCategory: RecordCategory?
     @State private var selectedRecord: Record?
