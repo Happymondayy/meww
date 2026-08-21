@@ -13,14 +13,26 @@ import SwiftData
 /// 자동으로 여기 들어가지 않는다. 홈 화면 칩의 개수(`HomeView.scrapCount`)와 같은 기준이라
 /// 숫자가 항상 일치한다.
 ///
-/// Figma 목업엔 사용자가 만든 폴더(힐링 문장/인사이트/+ 새 폴더)가 있지만, `Record`엔 폴더를
-/// 저장할 데이터가 없다 — 동작하지 않는 폴더를 가짜로 보여주는 대신 실제로 전부를 보여주는
-/// "전체" 칩만 남겨뒀다.
+/// 폴더는 `RevisitRecordsView`와 같은 `Folder`/`Record.folder`를 그대로 공유한다 — 폴더는
+/// 기록 자체에 붙는 속성이고, "다시 보고 싶어요"/"문장 스크랩"은 그 위에 얹힌 독립된 필터일
+/// 뿐이라 화면마다 폴더를 따로 두지 않는다(애플 메모/인스타페이퍼와 같은 방식).
 struct SentenceScrapView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Record.recordedAt, order: .reverse) private var records: [Record]
+    @Query(sort: \Folder.createdAt) private var folders: [Folder]
+
+    @State private var selectedRecord: Record?
+    @State private var recordPendingFolderAssignment: Record?
+    @State private var showNewFolderAlert = false
+    @State private var newFolderName = ""
 
     private var scraps: [Record] {
         records.filter { $0.isScrapped && !$0.comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    /// 아직 어느 폴더에도 넣지 않은 스크랩 — "전체" 칩의 목록.
+    private var unclassifiedScraps: [Record] {
+        scraps.filter { $0.folder == nil }
     }
 
     var body: some View {
@@ -30,13 +42,13 @@ struct SentenceScrapView: View {
                     .font(.footnote)
                     .foregroundStyle(Color.recordTabInactive)
 
-                folderChip
+                folderChipRow
 
-                if scraps.isEmpty {
+                if unclassifiedScraps.isEmpty {
                     emptyState
                 } else {
                     VStack(spacing: 12) {
-                        ForEach(scraps) { record in
+                        ForEach(unclassifiedScraps) { record in
                             scrapCard(record)
                         }
                     }
@@ -48,16 +60,84 @@ struct SentenceScrapView: View {
         }
         .navigationTitle("문장 스크랩")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("새 폴더", isPresented: $showNewFolderAlert) {
+            TextField("폴더 이름", text: $newFolderName)
+            Button("취소", role: .cancel) { newFolderName = "" }
+            Button("만들기") { createFolder() }
+        }
+        .confirmationDialog(
+            "폴더 선택",
+            isPresented: Binding(
+                get: { recordPendingFolderAssignment != nil },
+                set: { if !$0 { recordPendingFolderAssignment = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("전체(폴더 없음)") { assignFolder(nil) }
+            ForEach(folders) { folder in
+                Button(folder.name) { assignFolder(folder) }
+            }
+            Button("취소", role: .cancel) {}
+        }
+        .sheet(item: $selectedRecord) { record in
+            RecordDetailView(record: record)
+                .presentationDetents([.fraction(0.72), .large])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(20)
+        }
     }
 
-    private var folderChip: some View {
-        Text("📁 전체 \(scraps.count)")
+    // MARK: - Folder chips
+
+    private var folderChipRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                folderChipLabel(title: "📁 전체 \(unclassifiedScraps.count)", isSelected: true)
+
+                ForEach(folders) { folder in
+                    NavigationLink {
+                        ScrapFolderDetailView(folder: folder)
+                    } label: {
+                        folderChipLabel(title: "📁 \(folder.name) \(count(in: folder))", isSelected: false)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Button {
+                    showNewFolderAlert = true
+                } label: {
+                    Text("+ 새 폴더")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.recordTabInactive)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.recordDragHandle, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.borderless)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func folderChipLabel(title: String, isSelected: Bool) -> some View {
+        Text(title)
             .font(.caption)
             .fontWeight(.semibold)
-            .foregroundStyle(.white)
+            .foregroundStyle(isSelected ? .white : Color.recordFilterInactiveText)
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
-            .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: 14))
+            .background(
+                isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+    }
+
+    private func count(in folder: Folder) -> Int {
+        scraps.filter { $0.folder === folder }.count
     }
 
     private func scrapCard(_ record: Record) -> some View {
@@ -66,25 +146,45 @@ struct SentenceScrapView: View {
                 .fill(Color.recordStatBook)
                 .frame(width: 3)
 
-            VStack(alignment: .leading, spacing: 10) {
-                Text(record.comment)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.recordScrapCardText)
-
-                HStack(spacing: 4) {
-                    Text(record.title)
+            Button {
+                selectedRecord = record
+            } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(record.comment)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.recordScrapCardMetaTitle)
-                    Text("· \(record.creator) · \(record.recordedAtCompact)")
-                        .foregroundStyle(Color.recordScrapCardMetaSecondary)
+                        .foregroundStyle(Color.recordScrapCardText)
+
+                    HStack(spacing: 4) {
+                        Text(record.title)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.recordScrapCardMetaTitle)
+                        Text("· \(record.creator) · \(record.recordedAtCompact)")
+                            .foregroundStyle(Color.recordScrapCardMetaSecondary)
+                    }
+                    .font(.caption)
                 }
-                .font(.caption)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(.plain)
+
+            Button {
+                recordPendingFolderAssignment = record
+            } label: {
+                Image(systemName: "folder")
+                    .foregroundStyle(Color.recordTextSecondary)
+            }
+            .buttonStyle(.borderless)
         }
         .padding(16)
         .background(Color.recordScrapCardBackground, in: RoundedRectangle(cornerRadius: 12))
+        .contextMenu {
+            Button {
+                recordPendingFolderAssignment = record
+            } label: {
+                Label("폴더로 이동", systemImage: "folder")
+            }
+        }
     }
 
     private var emptyState: some View {
@@ -99,6 +199,23 @@ struct SentenceScrapView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
+    }
+
+    // MARK: - Folder actions
+
+    private func createFolder() {
+        let trimmed = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        newFolderName = ""
+        guard !trimmed.isEmpty else { return }
+        let folder = Folder(name: trimmed)
+        modelContext.insert(folder)
+    }
+
+    private func assignFolder(_ folder: Folder?) {
+        guard let record = recordPendingFolderAssignment else { return }
+        record.folder = folder
+        try? modelContext.save()
+        recordPendingFolderAssignment = nil
     }
 }
 
