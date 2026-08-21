@@ -65,10 +65,10 @@ struct CalendarDayDetailView: View {
             }
             .font(.footnote)
             .fontWeight(.semibold)
-            .foregroundStyle(Color.recordFilterInactiveText)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: 12))
+            .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
