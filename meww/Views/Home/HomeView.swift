@@ -14,6 +14,9 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Record.recordedAt, order: .reverse) private var records: [Record]
 
+    /// "마이" 화면에서 설정한 닉네임 — 설정돼 있으면 헤더 요약 문구 앞에 인사말로 붙는다.
+    @AppStorage("userNickname") private var nickname = ""
+
     @StateObject private var tasteEngine = TasteRecommendationEngine()
 
     @State private var selectedCategory: RecordCategory?
@@ -106,16 +109,21 @@ struct HomeView: View {
         records.filter { Calendar.current.isDate($0.recordedAt, equalTo: .now, toGranularity: .month) }
     }
 
+    private var nicknameGreeting: String {
+        let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "" : "\(trimmed)님, "
+    }
+
     private var headerSummaryText: String {
         switch selectedCategory {
         case nil:
             let musicCount = thisMonthRecords.filter { $0.category == .music }.count
             let bookCount = thisMonthRecords.filter { $0.category == .book }.count
-            return "이번 달 음악 \(musicCount)개\n독서 \(bookCount)개 기록했어요"
+            return "\(nicknameGreeting)이번 달 음악 \(musicCount)개\n독서 \(bookCount)개 기록했어요"
         case .music, .book:
             let category = selectedCategory!
             let count = thisMonthRecords.filter { $0.category == category }.count
-            return "이번 달 \(category.rawValue)\n\(count)개 기록했어요"
+            return "\(nicknameGreeting)이번 달 \(category.rawValue)\n\(count)개 기록했어요"
         }
     }
 

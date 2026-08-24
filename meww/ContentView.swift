@@ -24,7 +24,9 @@ struct ContentView: View {
             }
 
             Tab("캘린더", systemImage: "calendar") {
-                CalendarView()
+                NavigationStack {
+                    CalendarView()
+                }
             }
         }
     }
