@@ -21,6 +21,11 @@ final class GeminiService: ObservableObject {
     // to new users") 항상 실패했다 — 현재 권장되는 flash 티어 모델로 바꿨다.
     private let model = "gemini-3.6-flash"
 
+    /// 429(RESOURCE_EXHAUSTED)를 받았을 때 재시도할 최대 횟수 — 초과하면 그대로 실패 처리한다.
+    private let maxRetryCount = 2
+    /// 재시도 사이에 기다리는 시간.
+    private let retryDelay: Duration = .seconds(1)
+
     /// 실패하면 `errorMessage`를 채우고 `nil`을 돌려준다.
     func generate(prompt: String) async -> String? {
         guard !Secrets.googleGeminiAPIKey.isEmpty else {
@@ -32,15 +37,25 @@ final class GeminiService: ObservableObject {
         errorMessage = nil
         defer { isGenerating = false }
 
-        do {
-            return try await fetchResponse(for: prompt)
-        } catch let error as GeminiServiceError {
-            errorMessage = error.userMessage
-            return nil
-        } catch {
-            errorMessage = "추천을 생성하는 중 문제가 발생했어요. 다시 시도해주세요."
-            return nil
+        for attempt in 0...maxRetryCount {
+            do {
+                return try await fetchResponse(for: prompt)
+            } catch let error as GeminiServiceError {
+                // 429는 요청이 몰려서 생기는 일시적인 에러라 잠깐 기다렸다 다시 시도해볼
+                // 가치가 있다 — 그 외 에러는 재시도해도 똑같이 실패할 뿐이라 바로 끝낸다.
+                let isRateLimited = if case .api(let status, _) = error { status == 429 } else { false }
+                guard isRateLimited, attempt < maxRetryCount else {
+                    errorMessage = error.userMessage
+                    return nil
+                }
+                try? await Task.sleep(for: retryDelay)
+            } catch {
+                errorMessage = "추천을 생성하는 중 문제가 발생했어요. 다시 시도해주세요."
+                return nil
+            }
         }
+
+        return nil
     }
 
     private func fetchResponse(for prompt: String) async throws -> String {
@@ -89,6 +104,9 @@ private enum GeminiServiceError: Error {
     var userMessage: String {
         switch self {
         case .api(let status, let message):
+            if status == 429 {
+                return "요청이 많아 잠시 후 다시 시도해주세요"
+            }
             if let message {
                 return "Gemini 오류(\(status)): \(message)"
             }

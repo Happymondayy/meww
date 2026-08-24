@@ -16,6 +16,9 @@ import UIKit
 /// 독서는 Google Books API(`BookSearchService`)로 검색한다 — `Secrets.googleBooksAPIKey`가
 /// 비어있는 동안은 "제목 직접 입력" 경로로 빠진다.
 struct AddRecordSearchView: View {
+    /// 기본은 오늘이지만, 캘린더 날짜 상세에서 "이 날짜로 기록 추가"로 들어왔다면 그 날짜를 받는다.
+    var recordedAt: Date = .now
+
     @State private var category: RecordCategory = .music
     @State private var query = ""
     @StateObject private var musicSearch = MusicSearchService()
@@ -32,17 +35,17 @@ struct AddRecordSearchView: View {
     var body: some View {
         VStack(spacing: 0) {
             categoryToggle
-                .padding(.horizontal, 24)
-                .padding(.top, 4)
-                .padding(.bottom, 12)
+                .padding(.horizontal, .recordSpacingXL)
+                .padding(.top, .recordSpacingXS)
+                .padding(.bottom, .recordSpacingM)
 
             searchField
-                .padding(.horizontal, 24)
-                .padding(.bottom, 8)
+                .padding(.horizontal, .recordSpacingXL)
+                .padding(.bottom, .recordSpacingS)
 
             resultsCaption
-                .padding(.horizontal, 24)
-                .padding(.bottom, 4)
+                .padding(.horizontal, .recordSpacingXL)
+                .padding(.bottom, .recordSpacingXS)
 
             if category == .music {
                 musicResultsList
@@ -55,7 +58,13 @@ struct AddRecordSearchView: View {
         .navigationTitle("기록 추가")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $selection) { item in
-            RecordWriteView(category: category, title: item.title, creator: item.creator, artworkURL: item.artworkURL)
+            RecordWriteView(
+                category: category,
+                title: item.title,
+                creator: item.creator,
+                artworkURL: item.artworkURL,
+                recordedAt: recordedAt
+            )
         }
         .task(id: query) {
             try? await Task.sleep(for: .milliseconds(300))
@@ -91,17 +100,17 @@ struct AddRecordSearchView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(category == option ? .white : Color.recordTabInactive)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
+                    .padding(.vertical, .recordSpacingS)
                     .background(
                         category == option ? Color.recordFilterActiveBackground : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 6)
+                        in: RoundedRectangle(cornerRadius: .recordRadiusXS)
                     )
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(2)
-        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.recordSpacingXS)
+        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
     }
 
     // MARK: - Search field
@@ -116,9 +125,9 @@ struct AddRecordSearchView: View {
             )
             .font(.subheadline)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, .recordSpacingM)
+        .padding(.vertical, .recordSpacingS)
+        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
     }
 
     private var resultsCaption: some View {
@@ -173,16 +182,18 @@ struct AddRecordSearchView: View {
     ) -> some View {
         Button(action: onSelect) {
             HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: .recordRadiusXS)
                     .fill(Color.recordPlaceholderArt)
                     .frame(width: 48, height: 48)
                     .overlay {
                         AsyncImage(url: artworkURL) { image in
                             image.resizable().scaledToFill()
+                                .frame(width: 48, height: 48)
                         } placeholder: {
                             Image(systemName: systemImage).foregroundStyle(.white.opacity(0.85))
+                                .frame(width: 48, height: 48)
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .clipShape(RoundedRectangle(cornerRadius: .recordRadiusXS))
                     }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -220,7 +231,7 @@ struct AddRecordSearchView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
+        .padding(.recordSpacingXL)
     }
 
     // MARK: - Book results (Google Books API)
@@ -270,7 +281,7 @@ struct AddRecordSearchView: View {
             .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
+        .padding(.recordSpacingXL)
     }
 }
 

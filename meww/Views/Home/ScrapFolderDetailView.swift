@@ -1,16 +1,17 @@
 //
-//  FolderDetailView.swift
+//  ScrapFolderDetailView.swift
 //  meww
 //
-//  Created by yunseo on 8/18/26.
+//  Created by yunseo on 8/21/26.
 //
 
 import SwiftUI
 import SwiftData
 
-/// 폴더 칩을 탭하면 들어오는 폴더 전용 화면. 여기서 다른 폴더로(또는 미분류로) 옮기면
-/// 이 목록에서 바로 사라진다 — 기록은 항상 폴더 한 곳(또는 미분류)에만 속한다.
-struct FolderDetailView: View {
+/// `SentenceScrapView`의 폴더 칩을 탭하면 들어오는 폴더 전용 화면. 여기서 다른 폴더로(또는
+/// 미분류로) 옮기면 이 목록에서 바로 사라진다 — `RevisitRecordsView`/`FolderDetailView`와
+/// 같은 `Folder`를 공유하지만, 스크랩 카드 스타일로 보여준다는 점만 다르다.
+struct ScrapFolderDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \Record.recordedAt, order: .reverse) private var records: [Record]
@@ -24,46 +25,39 @@ struct FolderDetailView: View {
     @State private var renameFolderName = ""
     @State private var showDeleteConfirmation = false
 
-    private var folderRecords: [Record] {
-        records.filter { $0.wantsToRevisit && $0.folder === folder }
+    private var folderScraps: [Record] {
+        records.filter {
+            $0.isScrapped
+                && !$0.comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && $0.folder === folder
+        }
     }
 
     var body: some View {
         List {
-            if folderRecords.isEmpty {
+            if folderScraps.isEmpty {
                 emptyState
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             } else {
-                ForEach(folderRecords) { record in
-                    Button {
-                        selectedRecord = record
-                    } label: {
-                        RevisitRecordRowView(record: record)
-                    }
-                    .buttonStyle(.borderless)
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparatorTint(Color.recordSeparator)
-                    .swipeActions(edge: .trailing) {
-                        Button {
-                            recordPendingFolderAssignment = record
-                        } label: {
-                            Label("폴더", systemImage: "folder")
+                ForEach(folderScraps) { record in
+                    scrapCard(record)
+                        .listRowInsets(EdgeInsets(top: .recordSpacingXS, leading: 0, bottom: .recordSpacingXS, trailing: 0))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                unscrap(record)
+                            } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
                         }
-                        .tint(Color.recordFilterActiveBackground)
-                    }
-                    .contextMenu {
-                        Button {
-                            recordPendingFolderAssignment = record
-                        } label: {
-                            Label("폴더로 이동", systemImage: "folder")
-                        }
-                    }
                 }
             }
         }
         .listStyle(.plain)
-        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
+        .contentMargins(.all, .recordSpacingXL, for: .scrollContent)
         .navigationTitle(folder.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -122,18 +116,63 @@ struct FolderDetailView: View {
         }
     }
 
+    private func scrapCard(_ record: Record) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            RoundedRectangle(cornerRadius: .recordRadiusXS)
+                .fill(Color.recordStatBook)
+                .frame(width: 3)
+
+            Button {
+                selectedRecord = record
+            } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(record.comment)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.recordScrapCardText)
+
+                    HStack(spacing: 4) {
+                        Text(record.title)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.recordScrapCardMetaTitle)
+                        Text("· \(record.creator) · \(record.recordedAtCompact)")
+                            .foregroundStyle(Color.recordScrapCardMetaSecondary)
+                    }
+                    .font(.caption)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.recordSpacingL)
+        .background(Color.recordScrapCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
+        .contextMenu {
+            Button {
+                recordPendingFolderAssignment = record
+            } label: {
+                Label("폴더로 이동", systemImage: "folder")
+            }
+        }
+    }
+
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "folder")
                 .font(.title)
                 .foregroundStyle(Color.recordTextSecondary)
-            Text("이 폴더엔 기록이 없어요")
+            Text("이 폴더엔 스크랩이 없어요")
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.recordTextSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, .recordSpacingXXL)
+    }
+
+    /// 스크랩 목록에서만 지운다 — 기록 자체(코멘트 포함)는 그대로 두고 `isScrapped`만 끈다.
+    private func unscrap(_ record: Record) {
+        record.isScrapped = false
+        try? modelContext.save()
     }
 
     private func assignFolder(_ newFolder: Folder?) {
@@ -159,7 +198,7 @@ struct FolderDetailView: View {
 
 #Preview {
     NavigationStack {
-        FolderDetailView(folder: Folder(name: "다시 볼 앨범"))
+        ScrapFolderDetailView(folder: Folder(name: "인사이트"))
     }
     .modelContainer(.recordPreviewContainer)
 }

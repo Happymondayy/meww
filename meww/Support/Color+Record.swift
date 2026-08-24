@@ -71,4 +71,11 @@ extension Color {
     static let recordScrapCardText = Color(hex: 0x26241F)
     static let recordScrapCardMetaTitle = Color(hex: 0x807566)
     static let recordScrapCardMetaSecondary = Color(hex: 0xA6A199)
+
+    // MARK: - 캘린더 (📅 캘린더)
+
+    /// "🎵 음악 N" 월간 집계 칩. 독서 칩은 다시보고싶어요 칩과 같은 색이라 토큰을 새로 만들지 않고
+    /// `recordRevisitChipBackground`/`recordRevisitChipText`를 그대로 재사용한다.
+    static let recordCalendarMusicBackground = Color(hex: 0xE5F2EB)
+    static let recordCalendarMusicText = Color(hex: 0x336B4D)
 }

@@ -24,10 +24,22 @@ extension Record {
         recordedAtCompact + "에 기록함"
     }
 
+    /// e.g. "21:05" — 캘린더 날짜 상세(📅 캘린더) 타임라인용. 24시간제.
+    var recordedAtTimeCompact: String {
+        Self.timeFormatter.string(from: recordedAt)
+    }
+
     private static let recordedAtFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "yyyy.MM.dd"
+        return formatter
+    }()
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "HH:mm"
         return formatter
     }()
 }
@@ -50,10 +62,22 @@ extension Date {
         Self.monthFormatter.string(from: self)
     }
 
+    /// e.g. "화요일" — 캘린더 날짜 상세(📅 캘린더) 헤더용.
+    var koreanWeekdayTitle: String {
+        Self.weekdayFormatter.string(from: self)
+    }
+
     private static let monthFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "yyyy년 M월"
+        return formatter
+    }()
+
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "EEEE"
         return formatter
     }()
 }

@@ -20,31 +20,39 @@ struct HomeView: View {
     @State private var showTasteRecommendation = false
     @State private var showSentenceScrap = false
     @State private var showRevisitRecords = false
+    @State private var showAllRecords = false
     @State private var selectedRecord: Record?
+
+    /// 홈엔 최근 기록만 미리 보여준다 — 전부는 "전체보기"로 들어간 `AllRecordsView`에서 본다.
+    /// 데이터가 쌓일수록 홈 화면 스크롤이 한없이 길어지는 걸 막기 위함.
+    private let recentRecordsPreviewLimit = 5
 
     var body: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 20) {
                     headerSummary
-                    tasteHighlightsSection
                     quickAccessRow
+                    tasteHighlightsSection
                     categoryFilterRow
                 }
                 .listRowInsets(EdgeInsets())
                 .listRowSeparator(.hidden)
             }
 
-            ForEach(monthGroups, id: \.month) { group in
-                Section {
-                    Text(group.month.koreanMonthTitle)
-                        .font(.footnote)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.recordTextSecondary)
-                        .listRowInsets(EdgeInsets(top: 16, leading: 0, bottom: 8, trailing: 0))
-                        .listRowSeparator(.hidden)
+            Section {
+                recentRecordsHeader
+                    .listRowInsets(EdgeInsets(top: .recordSpacingL, leading: 0, bottom: .recordSpacingS, trailing: 0))
+                    .listRowSeparator(.hidden)
 
-                    ForEach(group.records) { record in
+                if previewRecords.isEmpty {
+                    Text("아직 기록이 없어요")
+                        .font(.caption)
+                        .foregroundStyle(Color.recordTextSecondary)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: .recordSpacingXL, trailing: 0))
+                        .listRowSeparator(.hidden)
+                } else {
+                    ForEach(previewRecords) { record in
                         Button {
                             selectedRecord = record
                         } label: {
@@ -65,9 +73,9 @@ struct HomeView: View {
             }
         }
         .listStyle(.plain)
-        .contentMargins(.horizontal, 24, for: .scrollContent)
+        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
         .navigationDestination(isPresented: $showTasteRecommendation) {
-            TasteRecommendationView(engine: tasteEngine)
+            TasteRecommendationView()
         }
         .navigationDestination(isPresented: $showSentenceScrap) {
             SentenceScrapView()
@@ -75,11 +83,20 @@ struct HomeView: View {
         .navigationDestination(isPresented: $showRevisitRecords) {
             RevisitRecordsView()
         }
+        .navigationDestination(isPresented: $showAllRecords) {
+            AllRecordsView(initialCategory: selectedCategory)
+        }
         .sheet(item: $selectedRecord) { record in
             RecordDetailView(record: record)
                 .presentationDetents([.fraction(0.72), .large])
                 .presentationDragIndicator(.hidden)
                 .presentationCornerRadius(20)
+        }
+        // 홈 탭은 앱 안에서 계속 살아있는 뷰라 다른 탭에서 기록을 추가하고 돌아와도
+        // `.task`는 다시 안 불린다 — `.onAppear`는 탭을 다시 보여줄 때마다 불려서, 그 사이
+        // 기록이 늘었으면(캐시가 오래됐으면) 자동으로 최신 추천으로 갱신된다.
+        .onAppear {
+            Task { await tasteEngine.loadIfNeeded(from: records) }
         }
     }
 
@@ -108,7 +125,7 @@ struct HomeView: View {
             .fontWeight(.bold)
             .foregroundStyle(Color.recordTextPrimary)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 12)
+            .padding(.top, .recordSpacingM)
     }
 
     // MARK: - Taste recommendations (Gemini)
@@ -147,7 +164,9 @@ struct HomeView: View {
                 .buttonStyle(.borderless)
             }
 
-            if tasteEngine.isLoading {
+            // 카드가 이미 있으면(캐시에서 불러왔거나 이전 결과) 백그라운드 갱신 중에도
+            // 계속 보여준다 — 로딩 스피너는 카드가 하나도 없을 때만 뜬다.
+            if tasteEngine.isLoading && tasteEngine.cards.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: 96)
             } else if tasteEngine.cards.isEmpty {
@@ -177,8 +196,8 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
     }
 
     // MARK: - Quick access
@@ -212,9 +231,9 @@ struct HomeView: View {
                     }
                     .font(.caption)
                     .foregroundStyle(Color.recordRevisitChipText)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.recordRevisitChipBackground, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal, .recordSpacingM)
+                    .padding(.vertical, .recordSpacingS)
+                    .background(Color.recordRevisitChipBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
                 }
                 .buttonStyle(.borderless)
 
@@ -227,9 +246,9 @@ struct HomeView: View {
                     }
                     .font(.caption)
                     .foregroundStyle(Color.recordNeutralChipText)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.recordNeutralChipBackground, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal, .recordSpacingM)
+                    .padding(.vertical, .recordSpacingS)
+                    .background(Color.recordNeutralChipBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
                 }
                 .buttonStyle(.borderless)
             }
@@ -273,24 +292,42 @@ struct HomeView: View {
                         in: Circle()
                     )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.horizontal, .recordSpacingM)
+            .padding(.vertical, .recordSpacingS)
             .background(
                 isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                in: RoundedRectangle(cornerRadius: 16)
+                in: RoundedRectangle(cornerRadius: .recordRadiusL)
             )
         }
         .buttonStyle(.borderless)
     }
 
-    // MARK: - Monthly grouping
+    // MARK: - Recent records preview
 
     private var filteredRecords: [Record] {
         records.filter { selectedCategory == nil || $0.category == selectedCategory }
     }
 
-    private var monthGroups: [(month: Date, records: [Record])] {
-        filteredRecords.groupedByMonth()
+    private var previewRecords: [Record] {
+        Array(filteredRecords.prefix(recentRecordsPreviewLimit))
+    }
+
+    private var recentRecordsHeader: some View {
+        HStack {
+            Text("최근 기록")
+                .font(.footnote)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.recordTextSecondary)
+            Spacer()
+            Button {
+                showAllRecords = true
+            } label: {
+                Text("전체보기 ›")
+                    .font(.caption)
+                    .foregroundStyle(Color.recordTextSecondary)
+            }
+            .buttonStyle(.borderless)
+        }
     }
 }
 

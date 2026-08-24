@@ -22,6 +22,9 @@ struct RevisitRecordsView: View {
     @State private var recordPendingFolderAssignment: Record?
     @State private var showNewFolderAlert = false
     @State private var newFolderName = ""
+    @State private var folderPendingRename: Folder?
+    @State private var renameFolderName = ""
+    @State private var folderPendingDeletion: Folder?
 
     private var revisitRecords: [Record] {
         records.filter(\.wantsToRevisit)
@@ -49,9 +52,7 @@ struct RevisitRecordsView: View {
                     Button {
                         selectedRecord = record
                     } label: {
-                        RevisitRecordRowView(record: record) {
-                            recordPendingFolderAssignment = record
-                        }
+                        RevisitRecordRowView(record: record)
                     }
                     .buttonStyle(.borderless)
                     .listRowInsets(EdgeInsets())
@@ -75,13 +76,37 @@ struct RevisitRecordsView: View {
             }
         }
         .listStyle(.plain)
-        .contentMargins(.horizontal, 24, for: .scrollContent)
+        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
         .navigationTitle("다시 보고 싶은 기록")
         .navigationBarTitleDisplayMode(.inline)
         .alert("새 폴더", isPresented: $showNewFolderAlert) {
             TextField("폴더 이름", text: $newFolderName)
             Button("취소", role: .cancel) { newFolderName = "" }
             Button("만들기") { createFolder() }
+        }
+        .alert(
+            "폴더 이름 변경",
+            isPresented: Binding(
+                get: { folderPendingRename != nil },
+                set: { if !$0 { folderPendingRename = nil } }
+            )
+        ) {
+            TextField("폴더 이름", text: $renameFolderName)
+            Button("취소", role: .cancel) { folderPendingRename = nil }
+            Button("변경") { renameFolder() }
+        }
+        .confirmationDialog(
+            "이 폴더를 삭제할까요?",
+            isPresented: Binding(
+                get: { folderPendingDeletion != nil },
+                set: { if !$0 { folderPendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("삭제", role: .destructive) { deleteFolder() }
+            Button("취소", role: .cancel) { folderPendingDeletion = nil }
+        } message: {
+            Text("폴더 안의 기록은 삭제되지 않고 '전체'로 이동해요.")
         }
         .confirmationDialog(
             "폴더 선택",
@@ -110,15 +135,28 @@ struct RevisitRecordsView: View {
     private var folderChipRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                folderChipLabel(title: "📁 전체 \(unclassifiedRecords.count)", isSelected: true)
+                folderChipLabel(title: "전체 \(unclassifiedRecords.count)", isSelected: true)
 
                 ForEach(folders) { folder in
                     NavigationLink {
                         FolderDetailView(folder: folder)
                     } label: {
-                        folderChipLabel(title: "📁 \(folder.name) \(count(in: folder))", isSelected: false)
+                        folderChipLabel(title: "\(folder.name) \(count(in: folder))", isSelected: false)
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            renameFolderName = folder.name
+                            folderPendingRename = folder
+                        } label: {
+                            Label("이름 변경", systemImage: "pencil")
+                        }
+                        Button(role: .destructive) {
+                            folderPendingDeletion = folder
+                        } label: {
+                            Label("삭제", systemImage: "trash")
+                        }
+                    }
                 }
 
                 Button {
@@ -128,16 +166,16 @@ struct RevisitRecordsView: View {
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.recordTabInactive)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
+                        .padding(.horizontal, .recordSpacingM)
+                        .padding(.vertical, .recordSpacingS)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
+                            RoundedRectangle(cornerRadius: .recordRadiusM)
                                 .stroke(Color.recordDragHandle, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.borderless)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, .recordSpacingXS)
         }
     }
 
@@ -146,11 +184,11 @@ struct RevisitRecordsView: View {
             .font(.caption)
             .fontWeight(.semibold)
             .foregroundStyle(isSelected ? .white : Color.recordFilterInactiveText)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.horizontal, .recordSpacingM)
+            .padding(.vertical, .recordSpacingS)
             .background(
                 isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                in: RoundedRectangle(cornerRadius: 14)
+                in: RoundedRectangle(cornerRadius: .recordRadiusM)
             )
     }
 
@@ -171,7 +209,7 @@ struct RevisitRecordsView: View {
                 .foregroundStyle(Color.recordTextSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        .padding(.top, .recordSpacingXXL)
     }
 
     // MARK: - Folder actions
@@ -189,6 +227,24 @@ struct RevisitRecordsView: View {
         record.folder = folder
         try? modelContext.save()
         recordPendingFolderAssignment = nil
+    }
+
+    private func renameFolder() {
+        let trimmed = renameFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let folder = folderPendingRename, !trimmed.isEmpty else {
+            folderPendingRename = nil
+            return
+        }
+        folder.name = trimmed
+        try? modelContext.save()
+        folderPendingRename = nil
+    }
+
+    private func deleteFolder() {
+        guard let folder = folderPendingDeletion else { return }
+        modelContext.delete(folder)
+        try? modelContext.save()
+        folderPendingDeletion = nil
     }
 }
 

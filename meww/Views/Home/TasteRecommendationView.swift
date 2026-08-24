@@ -10,114 +10,47 @@ import SwiftData
 
 /// "✨ 취향 추천 (전체보기)" — Figma node 165:2. Pushed from HomeView's "더보기".
 ///
-/// The Figma mockup groups cards by genre/similarity ("에세이 장르 즐겨 읽음", "Fearless와 비슷"),
-/// which needs data `Record` doesn't have (no genre field, no recommendation engine). Instead,
-/// groups are built from real repetition in the data: creators the user has rated ≥4 more than
-/// once become a "◯◯ 선호" section; everything else lands in a catch-all highlight section.
+/// 상단 통계·필터는 `TasteProfile`이 이미 계산해둔 값을 그대로 쓰고, 아래 섹션들은
+/// `TasteProfile.favoriteCreators`(평점 4점 이상을 준 아티스트/저자)를 하나씩 순회하며
+/// Gemini에게 "이 아티스트/저자와 비슷한 새로운 추천"을 요청해 만든다 — 사용자가 이미
+/// 기록한 항목이 아니라 아직 안 접해본 새로운 카드들이다.
 struct TasteRecommendationView: View {
     @Query(sort: \Record.recordedAt, order: .reverse) private var records: [Record]
-    @ObservedObject var engine: TasteRecommendationEngine
+    @StateObject private var creatorEngine = CreatorTasteRecommendationEngine()
 
     @State private var selectedCategory: RecordCategory?
+
+    private var profile: TasteProfile { records.tasteProfile() }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if !filteredAICards.isEmpty {
-                    aiRecommendationSection
-                }
-
-                Text("취향 분석 데이터를 바탕으로 \(highlightRecords.count)개를 골랐어요")
-                    .font(.footnote)
-                    .foregroundStyle(Color.recordTextSecondary)
-
                 statCard
-
                 filterRow
-
-                if creatorGroups.isEmpty && otherHighlights.isEmpty {
-                    ContentUnavailableView(
-                        "아직 취향 데이터가 부족해요",
-                        systemImage: "sparkles",
-                        description: Text("별점 4점 이상인 기록이 쌓이면 취향 추천이 만들어져요.")
-                    )
-                    .padding(.top, 40)
-                } else {
-                    ForEach(creatorGroups, id: \.creator) { group in
-                        highlightGroup(title: "\(group.creator) 선호", records: group.records)
-                    }
-
-                    if !otherHighlights.isEmpty {
-                        highlightGroup(title: "그 외 취향 하이라이트", records: otherHighlights)
-                    }
-                }
+                content
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.horizontal, .recordSpacingXL)
+            .padding(.top, .recordSpacingS)
+            .padding(.bottom, .recordSpacingXL)
         }
         .navigationTitle("취향 추천")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    // MARK: - AI 추천 (Gemini)
-
-    /// 전체 탭이면 음악·독서 다 보여주고, 음악/독서 탭이면 그 카테고리만 남긴다 —
-    /// `filterRow`가 아래 취향 하이라이트뿐 아니라 이 섹션에도 함께 적용된다.
-    private var filteredAICards: [TasteRecommendationCard] {
-        guard let selectedCategory else { return engine.cards }
-        return engine.cards.filter { $0.category == selectedCategory }
-    }
-
-    private var aiRecommendationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("취향 추천")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.recordTextPrimary)
-                Spacer()
-                Button {
-                    Task { await engine.recommend(from: records) }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.caption)
-                        .foregroundStyle(Color.recordTextSecondary)
-                }
-                .buttonStyle(.borderless)
-                .disabled(engine.isLoading)
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 12) {
-                    ForEach(filteredAICards) { card in
-                        TasteRecommendationCardView(card: card, showsReason: true)
-                            .frame(width: 120)
-                    }
-                }
-            }
+        .task {
+            await creatorEngine.loadSectionsIfNeeded(from: profile)
         }
-        .padding(16)
-        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
-    // MARK: - Stat card
-
-    private var averageRating: Double {
-        guard !records.isEmpty else { return 0 }
-        let total = records.reduce(0) { $0 + $1.rating }
-        return Double(total) / Double(records.count)
-    }
+    // MARK: - Stat card (TasteProfile 값 그대로)
 
     private var statCard: some View {
         HStack(spacing: 0) {
-            statColumn(value: "\(records.count)", label: "총 기록", color: .recordTextPrimary)
-            statColumn(value: "\(records.filter { $0.category == .music }.count)", label: "음악", color: .recordStatMusic)
-            statColumn(value: "\(records.filter { $0.category == .book }.count)", label: "독서", color: .recordStatBook)
-            statColumn(value: String(format: "%.1f", averageRating), label: "평균 별점", color: .recordRatingGold)
+            statColumn(value: "\(profile.totalCount)", label: "총 기록", color: .recordTextPrimary)
+            statColumn(value: "\(profile.musicCount)", label: "음악", color: .recordStatMusic)
+            statColumn(value: "\(profile.bookCount)", label: "독서", color: .recordStatBook)
+            statColumn(value: String(format: "%.1f", profile.averageRating), label: "평균 별점", color: .recordRatingGold)
         }
-        .padding(.vertical, 18)
-        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.vertical, .recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
     }
 
     private func statColumn(value: String, label: String, color: Color) -> some View {
@@ -154,69 +87,105 @@ struct TasteRecommendationView: View {
                 .font(.footnote)
                 .fontWeight(.semibold)
                 .foregroundStyle(isSelected ? .white : Color.recordFilterInactiveText)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
+                .padding(.horizontal, .recordSpacingM)
+                .padding(.vertical, .recordSpacingS)
                 .background(
                     isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                    in: RoundedRectangle(cornerRadius: 16)
+                    in: RoundedRectangle(cornerRadius: .recordRadiusL)
                 )
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - Highlight groups
+    // MARK: - 아티스트/저자별 섹션
 
-    private var highlightRecords: [Record] {
-        records
-            .filter { $0.rating >= 4 }
-            .filter { selectedCategory == nil || $0.category == selectedCategory }
+    /// 전체 탭이면 다 보여주고, 음악/독서 탭이면 그 카테고리 섹션만 남긴다.
+    private var filteredSections: [CreatorRecommendationSection] {
+        guard let selectedCategory else { return creatorEngine.sections }
+        return creatorEngine.sections.filter { $0.category == selectedCategory }
     }
 
-    private var creatorGroups: [(creator: String, records: [Record])] {
-        Dictionary(grouping: highlightRecords, by: \.creator)
-            .filter { $0.value.count >= 2 }
-            .map { creator, records in
-                (creator: creator, records: records.sorted {
-                    $0.rating != $1.rating ? $0.rating > $1.rating : $0.recordedAt > $1.recordedAt
-                })
+    @ViewBuilder
+    private var content: some View {
+        if profile.favoriteCreators.isEmpty {
+            ContentUnavailableView(
+                "아직 취향 데이터가 부족해요",
+                systemImage: "sparkles",
+                description: Text("별점 4점 이상인 기록이 쌓이면 아티스트/저자별 추천이 만들어져요.")
+            )
+            .padding(.top, .recordSpacingXXL)
+        } else if creatorEngine.isLoading && creatorEngine.sections.isEmpty {
+            loadingSkeleton
+        } else if filteredSections.isEmpty {
+            Text(creatorEngine.errorMessage ?? "이 카테고리엔 아직 추천이 없어요")
+                .font(.footnote)
+                .foregroundStyle(Color.recordTextSecondary)
+                .frame(maxWidth: .infinity, minHeight: 96)
+        } else {
+            ForEach(filteredSections) { section in
+                sectionView(section)
             }
-            .sorted {
-                $0.records.count != $1.records.count
-                    ? $0.records.count > $1.records.count
-                    : $0.creator < $1.creator
+
+            if creatorEngine.isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 40)
             }
+        }
     }
 
-    private var otherHighlights: [Record] {
-        let groupedCreators = Set(creatorGroups.map(\.creator))
-        return highlightRecords
-            .filter { !groupedCreators.contains($0.creator) }
-            .sorted { $0.rating != $1.rating ? $0.rating > $1.rating : $0.recordedAt > $1.recordedAt }
-    }
-
-    private func highlightGroup(title: String, records: [Record]) -> some View {
+    private func sectionView(_ section: CreatorRecommendationSection) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
+            Text(section.title)
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .foregroundStyle(Color.recordTextPrimary)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(records) { record in
-                        TasteHighlightCardView(record: record)
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(section.cards) { card in
+                        TasteRecommendationCardView(card: card, showsReason: true)
                     }
                 }
             }
         }
-        .padding(16)
-        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
+    }
+
+    // MARK: - Loading skeleton
+
+    private var loadingSkeleton: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            ForEach(0..<2, id: \.self) { _ in
+                VStack(alignment: .leading, spacing: 12) {
+                    RoundedRectangle(cornerRadius: .recordRadiusXS)
+                        .fill(Color.recordPlaceholderArt.opacity(0.4))
+                        .frame(width: 140, height: 16)
+
+                    HStack(spacing: 12) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            VStack(alignment: .leading, spacing: 4) {
+                                RoundedRectangle(cornerRadius: .recordRadiusS)
+                                    .fill(Color.recordPlaceholderArt.opacity(0.4))
+                                    .frame(width: 96, height: 96)
+                                RoundedRectangle(cornerRadius: .recordRadiusXS)
+                                    .fill(Color.recordPlaceholderArt.opacity(0.3))
+                                    .frame(width: 70, height: 10)
+                            }
+                        }
+                    }
+                }
+                .padding(.recordSpacingL)
+                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
+            }
+        }
+        .redacted(reason: .placeholder)
     }
 }
 
 #Preview {
     NavigationStack {
-        TasteRecommendationView(engine: TasteRecommendationEngine())
+        TasteRecommendationView()
     }
     .modelContainer(.recordPreviewContainer)
 }

@@ -29,6 +29,10 @@ struct TasteProfile {
     /// 없다 — 대신 실제로 있는 데이터인 카테고리(음악/독서)별 빈도를 쓴다.
     let musicCount: Int
     let bookCount: Int
+    /// 전체 기록 개수 — "총 기록" 통계 카드용.
+    let totalCount: Int
+    /// 전체 기록의 평균 별점 — "평균 별점" 통계 카드용. 기록이 없으면 0.
+    let averageRating: Double
 
     var isEmpty: Bool {
         favoriteCreators.isEmpty && revisitMusic.isEmpty && revisitBooks.isEmpty
@@ -61,7 +65,9 @@ extension Array where Element == Record {
             revisitMusic: filter { $0.wantsToRevisit && $0.category == .music },
             revisitBooks: filter { $0.wantsToRevisit && $0.category == .book },
             musicCount: filter { $0.category == .music }.count,
-            bookCount: filter { $0.category == .book }.count
+            bookCount: filter { $0.category == .book }.count,
+            totalCount: count,
+            averageRating: isEmpty ? 0 : Double(reduce(0) { $0 + $1.rating }) / Double(count)
         )
     }
 }

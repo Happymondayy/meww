@@ -16,6 +16,8 @@ struct RecordWriteView: View {
 
     let category: RecordCategory
     let artworkURL: URL?
+    /// 기본은 오늘이지만, 캘린더에서 특정 날짜로 들어왔다면 그 날짜로 기록을 남긴다.
+    let recordedAt: Date
 
     @State private var title: String
     @State private var creator: String
@@ -28,9 +30,10 @@ struct RecordWriteView: View {
     @State private var recommendedFor = ""
     @State private var didSave = false
 
-    init(category: RecordCategory, title: String, creator: String, artworkURL: URL?) {
+    init(category: RecordCategory, title: String, creator: String, artworkURL: URL?, recordedAt: Date = .now) {
         self.category = category
         self.artworkURL = artworkURL
+        self.recordedAt = recordedAt
         _title = State(initialValue: title)
         _creator = State(initialValue: creator)
         _isEditingItem = State(initialValue: title.isEmpty)
@@ -53,9 +56,9 @@ struct RecordWriteView: View {
                     recommendedForSection
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
-            .padding(.bottom, 12)
+            .padding(.horizontal, .recordSpacingXL)
+            .padding(.top, .recordSpacingM)
+            .padding(.bottom, .recordSpacingM)
         }
         .safeAreaInset(edge: .bottom) { saveButton }
         .navigationTitle("기록 작성")
@@ -66,17 +69,19 @@ struct RecordWriteView: View {
 
     private var itemHeader: some View {
         HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: .recordRadiusXS)
                 .fill(Color.recordPlaceholderArt)
                 .frame(width: 48, height: 48)
                 .overlay {
                     if let artworkURL {
                         AsyncImage(url: artworkURL) { image in
                             image.resizable().scaledToFill()
+                                .frame(width: 48, height: 48)
                         } placeholder: {
                             Color.clear
+                                .frame(width: 48, height: 48)
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .clipShape(RoundedRectangle(cornerRadius: .recordRadiusXS))
                     } else {
                         Image(systemName: category.systemImage)
                             .foregroundStyle(.white.opacity(0.85))
@@ -167,11 +172,11 @@ struct RecordWriteView: View {
             Text(title)
                 .font(.footnote)
                 .foregroundStyle(isSelected ? selectedText : Color.recordFilterInactiveText)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .padding(.horizontal, .recordSpacingM)
+                .padding(.vertical, .recordSpacingS)
                 .background(
                     isSelected ? selectedBackground : Color.recordFilterInactiveBackground,
-                    in: RoundedRectangle(cornerRadius: 16)
+                    in: RoundedRectangle(cornerRadius: .recordRadiusL)
                 )
         }
         .buttonStyle(.plain)
@@ -197,7 +202,7 @@ struct RecordWriteView: View {
                     Image(systemName: isScrapped ? "bookmark.fill" : "bookmark")
                         .font(.body)
                         .foregroundStyle(isScrapped ? Color.recordScrapBadgeText : Color.recordTextSecondary)
-                        .padding(6)
+                        .padding(.recordSpacingS)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -210,8 +215,8 @@ struct RecordWriteView: View {
             )
             .font(.subheadline)
             .lineLimit(3...6)
-            .padding(12)
-            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+            .padding(.recordSpacingM)
+            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: .recordRadiusS))
         }
     }
 
@@ -241,8 +246,8 @@ struct RecordWriteView: View {
             TextField(placeholder, text: text, axis: .vertical)
                 .font(.subheadline)
                 .lineLimit(3...6)
-                .padding(12)
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+                .padding(.recordSpacingM)
+                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: .recordRadiusS))
         }
     }
 
@@ -256,14 +261,14 @@ struct RecordWriteView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: 10))
+                .padding(.vertical, .recordSpacingM)
+                .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
         }
         .buttonStyle(.plain)
         .disabled(!isValid)
-        .padding(.horizontal, 24)
-        .padding(.top, 12)
-        .padding(.bottom, 28)
+        .padding(.horizontal, .recordSpacingXL)
+        .padding(.top, .recordSpacingM)
+        .padding(.bottom, .recordSpacingXL)
         .background(.bar)
     }
 
@@ -278,6 +283,7 @@ struct RecordWriteView: View {
             summary: summary.trimmingCharacters(in: .whitespacesAndNewlines),
             recommendedFor: recommendedFor.trimmingCharacters(in: .whitespacesAndNewlines),
             wantsToRevisit: wantsToRevisit ?? false,
+            recordedAt: recordedAt,
             artworkURL: artworkURL
         )
         modelContext.insert(record)

@@ -12,17 +12,19 @@ struct RecordRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 5)
+            RoundedRectangle(cornerRadius: .recordRadiusXS)
                 .fill(Color.recordPlaceholderArt)
                 .overlay {
                     if let artworkURL = record.artworkURL {
                         AsyncImage(url: artworkURL) { image in
                             image.resizable().scaledToFill()
+                                .frame(width: 48, height: 48)
                         } placeholder: {
                             Image(systemName: record.category.systemImage)
                                 .foregroundStyle(.white.opacity(0.85))
+                                .frame(width: 48, height: 48)
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                        .clipShape(RoundedRectangle(cornerRadius: .recordRadiusXS))
                     } else {
                         Image(systemName: record.category.systemImage)
                             .foregroundStyle(.white.opacity(0.85))
@@ -52,7 +54,7 @@ struct RecordRowView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(Color.recordRatingGold)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, .recordSpacingS)
     }
 
     @ViewBuilder
@@ -64,11 +66,11 @@ struct RecordRowView: View {
             .font(.caption2)
             .fontWeight(record.wantsToRevisit ? .semibold : .regular)
             .foregroundStyle(record.wantsToRevisit ? Color.recordRevisitTagText : Color.recordTextSecondary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .padding(.horizontal, .recordSpacingS)
+            .padding(.vertical, .recordSpacingXS)
             .background(
                 record.wantsToRevisit ? Color.recordRevisitTagBackground : Color.recordOnceTagBackground,
-                in: RoundedRectangle(cornerRadius: 4)
+                in: RoundedRectangle(cornerRadius: .recordRadiusXS)
             )
     }
 }
