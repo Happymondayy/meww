@@ -8,11 +8,10 @@
 import SwiftUI
 
 /// "❤️ 다시 보고 싶은 기록" 목록 행 — `RevisitRecordsView`(미분류)와 `FolderDetailView`(폴더별)가
-/// 같은 모양의 행을 쓴다. 오른쪽 폴더 아이콘을 탭하면 길게 누르기/스와이프 없이도 바로
-/// 폴더 이동 다이얼로그를 띄운다.
+/// 같은 모양의 행을 쓴다. 폴더 이동은 스와이프/길게 누르기로 한다 — 폴더 칩을 스크롤해서
+/// 옮겨 다닐 수 있게 된 뒤로는 행마다 따로 폴더 아이콘을 둘 필요가 없어졌다.
 struct RevisitRecordRowView: View {
     let record: Record
-    let onTapFolderIcon: () -> Void
 
     var body: some View {
         HStack(spacing: 14) {
@@ -56,13 +55,6 @@ struct RevisitRecordRowView: View {
             }
 
             Spacer(minLength: 0)
-
-            Button(action: onTapFolderIcon) {
-                Image(systemName: "folder")
-                    .foregroundStyle(Color.recordTextSecondary)
-                    .padding(.recordSpacingS)
-            }
-            .buttonStyle(.borderless)
         }
         .padding(.vertical, .recordSpacingS)
     }
@@ -70,8 +62,7 @@ struct RevisitRecordRowView: View {
 
 #Preview {
     RevisitRecordRowView(
-        record: Record(category: .music, title: "1989", creator: "Taylor Swift", rating: 5, wantsToRevisit: true),
-        onTapFolderIcon: {}
+        record: Record(category: .music, title: "1989", creator: "Taylor Swift", rating: 5, wantsToRevisit: true)
     )
     .padding()
 }
