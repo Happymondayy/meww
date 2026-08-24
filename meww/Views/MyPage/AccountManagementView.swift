@@ -11,12 +11,19 @@ import SwiftUI
 /// 닉네임 하나만 관리한다. `MyPageView` 상단 헤더에서도 같은 값을 탭해서 바로 고칠 수 있다 —
 /// 여기는 정식으로 들어가서 고치는 경로.
 struct AccountManagementView: View {
+    /// `MyPageView`의 닉네임 헤더와 같은 제한을 쓴다 — 홈 화면 인사말에 그대로 붙기 때문에
+    /// 여기서도 똑같이 막아야 한다.
+    private let nicknameMaxLength = 5
+
     @AppStorage("userNickname") private var nickname = ""
 
     var body: some View {
         Form {
             Section("닉네임") {
-                TextField("닉네임을 입력하세요", text: $nickname)
+                TextField("닉네임을 입력하세요 (최대 \(nicknameMaxLength)자)", text: $nickname)
+                    .onChange(of: nickname) {
+                        nickname = String(nickname.prefix(nicknameMaxLength))
+                    }
             }
         }
         .navigationTitle("계정 관리")

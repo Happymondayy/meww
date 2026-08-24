@@ -17,6 +17,10 @@ import SwiftData
 /// "기록" 섹션의 문장 스크랩/다시 보고 싶은 기록은 기존 화면을 그대로 재사용한다. "취향 분석"과
 /// "설정" 섹션 항목들은 아직 실제 기능이 없어 `ComingSoonView`로 자리만 잡아뒀다.
 struct MyPageView: View {
+    /// 홈 화면 인사말(`.title` 굵은 글씨)에 그대로 붙기 때문에, 너무 길면 줄바꿈이 여러 번
+    /// 일어나 레이아웃이 밀린다 — 입력 단계에서 미리 막는다.
+    private let nicknameMaxLength = 5
+
     @AppStorage("userNickname") private var nickname = ""
 
     @State private var showNicknameAlert = false
@@ -86,7 +90,10 @@ struct MyPageView: View {
         .navigationTitle("마이")
         .navigationBarTitleDisplayMode(.inline)
         .alert("닉네임 설정", isPresented: $showNicknameAlert) {
-            TextField("닉네임", text: $editedNickname)
+            TextField("닉네임 (최대 \(nicknameMaxLength)자)", text: $editedNickname)
+                .onChange(of: editedNickname) {
+                    editedNickname = String(editedNickname.prefix(nicknameMaxLength))
+                }
             Button("취소", role: .cancel) {}
             Button("저장") {
                 nickname = editedNickname.trimmingCharacters(in: .whitespacesAndNewlines)
