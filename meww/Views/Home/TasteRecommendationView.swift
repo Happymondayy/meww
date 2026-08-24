@@ -29,9 +29,9 @@ struct TasteRecommendationView: View {
                 filterRow
                 content
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.horizontal, .recordSpacingXL)
+            .padding(.top, .recordSpacingS)
+            .padding(.bottom, .recordSpacingXL)
         }
         .navigationTitle("취향 추천")
         .navigationBarTitleDisplayMode(.inline)
@@ -49,8 +49,8 @@ struct TasteRecommendationView: View {
             statColumn(value: "\(profile.bookCount)", label: "독서", color: .recordStatBook)
             statColumn(value: String(format: "%.1f", profile.averageRating), label: "평균 별점", color: .recordRatingGold)
         }
-        .padding(.vertical, 18)
-        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.vertical, .recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
     }
 
     private func statColumn(value: String, label: String, color: Color) -> some View {
@@ -87,11 +87,11 @@ struct TasteRecommendationView: View {
                 .font(.footnote)
                 .fontWeight(.semibold)
                 .foregroundStyle(isSelected ? .white : Color.recordFilterInactiveText)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
+                .padding(.horizontal, .recordSpacingM)
+                .padding(.vertical, .recordSpacingS)
                 .background(
                     isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                    in: RoundedRectangle(cornerRadius: 16)
+                    in: RoundedRectangle(cornerRadius: .recordRadiusL)
                 )
         }
         .buttonStyle(.plain)
@@ -113,7 +113,7 @@ struct TasteRecommendationView: View {
                 systemImage: "sparkles",
                 description: Text("별점 4점 이상인 기록이 쌓이면 아티스트/저자별 추천이 만들어져요.")
             )
-            .padding(.top, 40)
+            .padding(.top, .recordSpacingXXL)
         } else if creatorEngine.isLoading && creatorEngine.sections.isEmpty {
             loadingSkeleton
         } else if filteredSections.isEmpty {
@@ -148,8 +148,8 @@ struct TasteRecommendationView: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
     }
 
     // MARK: - Loading skeleton
@@ -158,25 +158,25 @@ struct TasteRecommendationView: View {
         VStack(alignment: .leading, spacing: 20) {
             ForEach(0..<2, id: \.self) { _ in
                 VStack(alignment: .leading, spacing: 12) {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: .recordRadiusXS)
                         .fill(Color.recordPlaceholderArt.opacity(0.4))
                         .frame(width: 140, height: 16)
 
                     HStack(spacing: 12) {
                         ForEach(0..<3, id: \.self) { _ in
                             VStack(alignment: .leading, spacing: 4) {
-                                RoundedRectangle(cornerRadius: 10)
+                                RoundedRectangle(cornerRadius: .recordRadiusS)
                                     .fill(Color.recordPlaceholderArt.opacity(0.4))
                                     .frame(width: 96, height: 96)
-                                RoundedRectangle(cornerRadius: 4)
+                                RoundedRectangle(cornerRadius: .recordRadiusXS)
                                     .fill(Color.recordPlaceholderArt.opacity(0.3))
                                     .frame(width: 70, height: 10)
                             }
                         }
                     }
                 }
-                .padding(16)
-                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.recordSpacingL)
+                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
             }
         }
         .redacted(reason: .placeholder)

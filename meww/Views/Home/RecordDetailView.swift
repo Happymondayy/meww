@@ -50,9 +50,9 @@ struct RecordDetailView: View {
 
                 fieldsSection
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 14)
-            .padding(.bottom, 12)
+            .padding(.horizontal, .recordSpacingXL)
+            .padding(.top, .recordSpacingM)
+            .padding(.bottom, .recordSpacingM)
         }
         .safeAreaInset(edge: .bottom) { bottomControls }
         .confirmationDialog("이 기록을 삭제할까요?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
@@ -77,9 +77,9 @@ struct RecordDetailView: View {
                 Text("🔖 스크랩됨")
                     .font(.caption2)
                     .foregroundStyle(Color.recordScrapBadgeText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.recordScrapBadgeBackground, in: RoundedRectangle(cornerRadius: 6))
+                    .padding(.horizontal, .recordSpacingS)
+                    .padding(.vertical, .recordSpacingXS)
+                    .background(Color.recordScrapBadgeBackground, in: RoundedRectangle(cornerRadius: .recordRadiusXS))
             }
         }
     }
@@ -87,17 +87,19 @@ struct RecordDetailView: View {
     /// 음악·독서 표지 크기를 똑같이 맞춘다 — 책 표지(세로가 긴 원본 비율)를 그대로 두면
     /// 앨범 아트보다 훨씬 커 보여서 화면 균형이 깨진다.
     private var artwork: some View {
-        RoundedRectangle(cornerRadius: 8)
+        RoundedRectangle(cornerRadius: .recordRadiusS)
             .fill(Color.recordPlaceholderArt)
             .overlay {
                 if let artworkURL = record.artworkURL {
                     AsyncImage(url: artworkURL) { image in
                         image.resizable().scaledToFill()
+                            .frame(width: 96, height: 96)
                     } placeholder: {
                         Image(systemName: record.category.systemImage)
                             .foregroundStyle(.white.opacity(0.85))
+                            .frame(width: 96, height: 96)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(RoundedRectangle(cornerRadius: .recordRadiusS))
                 } else {
                     Image(systemName: record.category.systemImage)
                         .foregroundStyle(.white.opacity(0.85))
@@ -141,11 +143,11 @@ struct RecordDetailView: View {
         )
         .font(.caption)
         .foregroundStyle(record.wantsToRevisit ? Color.recordRevisitChipText : Color.recordTextSecondary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, .recordSpacingM)
+        .padding(.vertical, .recordSpacingS)
         .background(
             record.wantsToRevisit ? Color.recordRevisitChipBackground : Color.recordFilterInactiveBackground,
-            in: RoundedRectangle(cornerRadius: 14)
+            in: RoundedRectangle(cornerRadius: .recordRadiusM)
         )
     }
 
@@ -168,11 +170,11 @@ struct RecordDetailView: View {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(isSelected ? selectedText : Color.recordTextSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, .recordSpacingM)
+                .padding(.vertical, .recordSpacingS)
                 .background(
                     isSelected ? selectedBackground : Color.recordFilterInactiveBackground,
-                    in: RoundedRectangle(cornerRadius: 14)
+                    in: RoundedRectangle(cornerRadius: .recordRadiusM)
                 )
         }
         .buttonStyle(.plain)
@@ -212,7 +214,7 @@ struct RecordDetailView: View {
                         Image(systemName: record.isScrapped ? "bookmark.fill" : "bookmark")
                             .font(.body)
                             .foregroundStyle(record.isScrapped ? Color.recordScrapBadgeText : Color.recordTextSecondary)
-                            .padding(6)
+                            .padding(.recordSpacingS)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -225,16 +227,16 @@ struct RecordDetailView: View {
                     .foregroundStyle(Color.recordTextPrimary)
                     .lineLimit(2...6)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-                    .background(Color.recordFieldBackground, in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.recordSpacingM)
+                    .background(Color.recordFieldBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
             } else {
                 Text(text.wrappedValue.isEmpty ? "—" : text.wrappedValue)
                     .font(.subheadline)
                     .foregroundStyle(text.wrappedValue.isEmpty ? Color.recordTextSecondary : Color.recordFieldText)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-                    .background(Color.recordFieldBackground, in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.recordSpacingM)
+                    .background(Color.recordFieldBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
             }
         }
     }
@@ -253,8 +255,8 @@ struct RecordDetailView: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.vertical, .recordSpacingM)
+                    .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
             }
             .buttonStyle(.plain)
 
@@ -269,9 +271,9 @@ struct RecordDetailView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
+        .padding(.horizontal, .recordSpacingXL)
+        .padding(.top, .recordSpacingM)
+        .padding(.bottom, .recordSpacingM)
         .background(.bar)
     }
 }

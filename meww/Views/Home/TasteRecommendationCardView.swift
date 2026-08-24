@@ -58,17 +58,19 @@ struct TasteRecommendationCardView: View {
     }
 
     private var artwork: some View {
-        RoundedRectangle(cornerRadius: 10)
+        RoundedRectangle(cornerRadius: .recordRadiusS)
             .fill(Color.recordPlaceholderArt)
             .overlay {
                 if let artworkURL = card.artworkURL {
                     AsyncImage(url: artworkURL) { image in
                         image.resizable().scaledToFill()
+                            .frame(width: 96, height: 96)
                     } placeholder: {
                         Image(systemName: card.category.systemImage)
                             .foregroundStyle(.white.opacity(0.85))
+                            .frame(width: 96, height: 96)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: .recordRadiusS))
                 } else {
                     Image(systemName: card.category.systemImage)
                         .foregroundStyle(.white.opacity(0.85))

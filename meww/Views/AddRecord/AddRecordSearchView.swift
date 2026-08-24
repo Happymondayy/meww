@@ -35,17 +35,17 @@ struct AddRecordSearchView: View {
     var body: some View {
         VStack(spacing: 0) {
             categoryToggle
-                .padding(.horizontal, 24)
-                .padding(.top, 4)
-                .padding(.bottom, 12)
+                .padding(.horizontal, .recordSpacingXL)
+                .padding(.top, .recordSpacingXS)
+                .padding(.bottom, .recordSpacingM)
 
             searchField
-                .padding(.horizontal, 24)
-                .padding(.bottom, 8)
+                .padding(.horizontal, .recordSpacingXL)
+                .padding(.bottom, .recordSpacingS)
 
             resultsCaption
-                .padding(.horizontal, 24)
-                .padding(.bottom, 4)
+                .padding(.horizontal, .recordSpacingXL)
+                .padding(.bottom, .recordSpacingXS)
 
             if category == .music {
                 musicResultsList
@@ -100,17 +100,17 @@ struct AddRecordSearchView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(category == option ? .white : Color.recordTabInactive)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
+                    .padding(.vertical, .recordSpacingS)
                     .background(
                         category == option ? Color.recordFilterActiveBackground : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 6)
+                        in: RoundedRectangle(cornerRadius: .recordRadiusXS)
                     )
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(2)
-        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.recordSpacingXS)
+        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
     }
 
     // MARK: - Search field
@@ -125,9 +125,9 @@ struct AddRecordSearchView: View {
             )
             .font(.subheadline)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, .recordSpacingM)
+        .padding(.vertical, .recordSpacingS)
+        .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
     }
 
     private var resultsCaption: some View {
@@ -182,16 +182,18 @@ struct AddRecordSearchView: View {
     ) -> some View {
         Button(action: onSelect) {
             HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: .recordRadiusXS)
                     .fill(Color.recordPlaceholderArt)
                     .frame(width: 48, height: 48)
                     .overlay {
                         AsyncImage(url: artworkURL) { image in
                             image.resizable().scaledToFill()
+                                .frame(width: 48, height: 48)
                         } placeholder: {
                             Image(systemName: systemImage).foregroundStyle(.white.opacity(0.85))
+                                .frame(width: 48, height: 48)
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .clipShape(RoundedRectangle(cornerRadius: .recordRadiusXS))
                     }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -229,7 +231,7 @@ struct AddRecordSearchView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
+        .padding(.recordSpacingXL)
     }
 
     // MARK: - Book results (Google Books API)
@@ -279,7 +281,7 @@ struct AddRecordSearchView: View {
             .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
+        .padding(.recordSpacingXL)
     }
 }
 

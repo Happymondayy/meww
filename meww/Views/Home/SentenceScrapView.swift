@@ -54,9 +54,9 @@ struct SentenceScrapView: View {
                     }
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 24)
+            .padding(.horizontal, .recordSpacingXL)
+            .padding(.top, .recordSpacingXL)
+            .padding(.bottom, .recordSpacingXL)
         }
         .navigationTitle("문장 스크랩")
         .navigationBarTitleDisplayMode(.inline)
@@ -110,16 +110,16 @@ struct SentenceScrapView: View {
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.recordTabInactive)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
+                        .padding(.horizontal, .recordSpacingM)
+                        .padding(.vertical, .recordSpacingS)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
+                            RoundedRectangle(cornerRadius: .recordRadiusM)
                                 .stroke(Color.recordDragHandle, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.borderless)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, .recordSpacingXS)
         }
     }
 
@@ -128,11 +128,11 @@ struct SentenceScrapView: View {
             .font(.caption)
             .fontWeight(.semibold)
             .foregroundStyle(isSelected ? .white : Color.recordFilterInactiveText)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.horizontal, .recordSpacingM)
+            .padding(.vertical, .recordSpacingS)
             .background(
                 isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                in: RoundedRectangle(cornerRadius: 14)
+                in: RoundedRectangle(cornerRadius: .recordRadiusM)
             )
     }
 
@@ -142,7 +142,7 @@ struct SentenceScrapView: View {
 
     private func scrapCard(_ record: Record) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 2)
+            RoundedRectangle(cornerRadius: .recordRadiusXS)
                 .fill(Color.recordStatBook)
                 .frame(width: 3)
 
@@ -176,8 +176,8 @@ struct SentenceScrapView: View {
             }
             .buttonStyle(.borderless)
         }
-        .padding(16)
-        .background(Color.recordScrapCardBackground, in: RoundedRectangle(cornerRadius: 12))
+        .padding(.recordSpacingL)
+        .background(Color.recordScrapCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
         .contextMenu {
             Button {
                 recordPendingFolderAssignment = record
@@ -198,7 +198,7 @@ struct SentenceScrapView: View {
                 .foregroundStyle(Color.recordTextSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        .padding(.top, .recordSpacingXXL)
     }
 
     // MARK: - Folder actions

@@ -40,9 +40,9 @@ struct ScrapFolderDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 24)
+            .padding(.horizontal, .recordSpacingXL)
+            .padding(.top, .recordSpacingXL)
+            .padding(.bottom, .recordSpacingXL)
         }
         .navigationTitle(folder.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -70,7 +70,7 @@ struct ScrapFolderDetailView: View {
 
     private func scrapCard(_ record: Record) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 2)
+            RoundedRectangle(cornerRadius: .recordRadiusXS)
                 .fill(Color.recordStatBook)
                 .frame(width: 3)
 
@@ -104,8 +104,8 @@ struct ScrapFolderDetailView: View {
             }
             .buttonStyle(.borderless)
         }
-        .padding(16)
-        .background(Color.recordScrapCardBackground, in: RoundedRectangle(cornerRadius: 12))
+        .padding(.recordSpacingL)
+        .background(Color.recordScrapCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
         .contextMenu {
             Button {
                 recordPendingFolderAssignment = record
@@ -126,7 +126,7 @@ struct ScrapFolderDetailView: View {
                 .foregroundStyle(Color.recordTextSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        .padding(.top, .recordSpacingXXL)
     }
 
     private func assignFolder(_ newFolder: Folder?) {

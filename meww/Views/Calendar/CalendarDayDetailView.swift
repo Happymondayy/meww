@@ -33,9 +33,9 @@ struct CalendarDayDetailView: View {
                 }
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
+        .padding(.horizontal, .recordSpacingXL)
+        .padding(.top, .recordSpacingM)
+        .padding(.bottom, .recordSpacingM)
         // 기록이 있을 땐 ScrollView가 시트 높이를 꽉 채워서 콘텐츠가 항상 위에 붙어 보이지만,
         // 기록이 없어서 짧은 콘텐츠만 있을 땐 SwiftUI가 그 짧은 콘텐츠를 시트 안에서 세로
         // 가운데 정렬해버려 위쪽에 큰 여백이 생긴다 — 항상 위쪽에 고정되도록 강제한다.
@@ -67,8 +67,8 @@ struct CalendarDayDetailView: View {
             .fontWeight(.semibold)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: 12))
+            .padding(.vertical, .recordSpacingS)
+            .background(Color.recordFilterActiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
         }
         .buttonStyle(.plain)
     }
@@ -94,7 +94,7 @@ struct CalendarDayDetailView: View {
                     .font(.caption)
                     .foregroundStyle(Color.recordTextSecondary)
             }
-            .padding(.top, 8)
+            .padding(.top, .recordSpacingS)
         }
     }
 
@@ -111,23 +111,25 @@ struct CalendarDayDetailView: View {
                 }
             }
             .frame(width: 16)
-            .padding(.top, 6)
+            .padding(.top, .recordSpacingS)
 
             Button {
                 selectedRecord = record
             } label: {
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: .recordRadiusS)
                         .fill(Color.recordPlaceholderArt)
                         .overlay {
                             if let artworkURL = record.artworkURL {
                                 AsyncImage(url: artworkURL) { image in
                                     image.resizable().scaledToFill()
+                                        .frame(width: 48, height: 48)
                                 } placeholder: {
                                     Image(systemName: record.category.systemImage)
                                         .foregroundStyle(.white.opacity(0.85))
+                                        .frame(width: 48, height: 48)
                                 }
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .clipShape(RoundedRectangle(cornerRadius: .recordRadiusS))
                             } else {
                                 Image(systemName: record.category.systemImage)
                                     .foregroundStyle(.white.opacity(0.85))
@@ -157,12 +159,12 @@ struct CalendarDayDetailView: View {
                         .font(.caption2)
                         .foregroundStyle(Color.recordTextSecondary)
                 }
-                .padding(12)
-                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.recordSpacingM)
+                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
             }
             .buttonStyle(.plain)
         }
-        .padding(.bottom, isLast ? 0 : 14)
+        .padding(.bottom, isLast ? 0 : .recordSpacingM)
     }
 }
 

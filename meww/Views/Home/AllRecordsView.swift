@@ -45,7 +45,7 @@ struct AllRecordsView: View {
                             .font(.footnote)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.recordTextSecondary)
-                            .listRowInsets(EdgeInsets(top: 16, leading: 0, bottom: 8, trailing: 0))
+                            .listRowInsets(EdgeInsets(top: .recordSpacingL, leading: 0, bottom: .recordSpacingS, trailing: 0))
                             .listRowSeparator(.hidden)
 
                         ForEach(group.records) { record in
@@ -70,7 +70,7 @@ struct AllRecordsView: View {
             }
         }
         .listStyle(.plain)
-        .contentMargins(.horizontal, 24, for: .scrollContent)
+        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
         .navigationTitle("전체 기록")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "제목·아티스트 검색")
@@ -119,11 +119,11 @@ struct AllRecordsView: View {
                         in: Circle()
                     )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.horizontal, .recordSpacingM)
+            .padding(.vertical, .recordSpacingS)
             .background(
                 isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                in: RoundedRectangle(cornerRadius: 16)
+                in: RoundedRectangle(cornerRadius: .recordRadiusL)
             )
         }
         .buttonStyle(.borderless)
@@ -164,7 +164,7 @@ struct AllRecordsView: View {
                 .foregroundStyle(Color.recordTextSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        .padding(.top, .recordSpacingXXL)
     }
 }
 

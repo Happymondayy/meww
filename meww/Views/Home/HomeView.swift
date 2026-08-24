@@ -42,14 +42,14 @@ struct HomeView: View {
 
             Section {
                 recentRecordsHeader
-                    .listRowInsets(EdgeInsets(top: 16, leading: 0, bottom: 8, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: .recordSpacingL, leading: 0, bottom: .recordSpacingS, trailing: 0))
                     .listRowSeparator(.hidden)
 
                 if previewRecords.isEmpty {
                     Text("아직 기록이 없어요")
                         .font(.caption)
                         .foregroundStyle(Color.recordTextSecondary)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 24, trailing: 0))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: .recordSpacingXL, trailing: 0))
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(previewRecords) { record in
@@ -73,7 +73,7 @@ struct HomeView: View {
             }
         }
         .listStyle(.plain)
-        .contentMargins(.horizontal, 24, for: .scrollContent)
+        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
         .navigationDestination(isPresented: $showTasteRecommendation) {
             TasteRecommendationView()
         }
@@ -125,7 +125,7 @@ struct HomeView: View {
             .fontWeight(.bold)
             .foregroundStyle(Color.recordTextPrimary)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 12)
+            .padding(.top, .recordSpacingM)
     }
 
     // MARK: - Taste recommendations (Gemini)
@@ -196,8 +196,8 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
     }
 
     // MARK: - Quick access
@@ -231,9 +231,9 @@ struct HomeView: View {
                     }
                     .font(.caption)
                     .foregroundStyle(Color.recordRevisitChipText)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.recordRevisitChipBackground, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal, .recordSpacingM)
+                    .padding(.vertical, .recordSpacingS)
+                    .background(Color.recordRevisitChipBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
                 }
                 .buttonStyle(.borderless)
 
@@ -246,9 +246,9 @@ struct HomeView: View {
                     }
                     .font(.caption)
                     .foregroundStyle(Color.recordNeutralChipText)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.recordNeutralChipBackground, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal, .recordSpacingM)
+                    .padding(.vertical, .recordSpacingS)
+                    .background(Color.recordNeutralChipBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
                 }
                 .buttonStyle(.borderless)
             }
@@ -292,11 +292,11 @@ struct HomeView: View {
                         in: Circle()
                     )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.horizontal, .recordSpacingM)
+            .padding(.vertical, .recordSpacingS)
             .background(
                 isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                in: RoundedRectangle(cornerRadius: 16)
+                in: RoundedRectangle(cornerRadius: .recordRadiusL)
             )
         }
         .buttonStyle(.borderless)

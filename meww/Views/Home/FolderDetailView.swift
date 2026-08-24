@@ -61,7 +61,7 @@ struct FolderDetailView: View {
             }
         }
         .listStyle(.plain)
-        .contentMargins(.horizontal, 24, for: .scrollContent)
+        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
         .navigationTitle(folder.name)
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog(
@@ -97,7 +97,7 @@ struct FolderDetailView: View {
                 .foregroundStyle(Color.recordTextSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        .padding(.top, .recordSpacingXXL)
     }
 
     private func assignFolder(_ newFolder: Folder?) {

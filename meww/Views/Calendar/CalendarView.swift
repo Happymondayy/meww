@@ -38,8 +38,8 @@ struct CalendarView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
+        .padding(.horizontal, .recordSpacingXL)
+        .padding(.top, .recordSpacingS)
         .sheet(item: $presentedDay) { day in
             CalendarDayDetailView(date: day.date, records: recordsForDay(day.date))
                 .presentationDetents([.medium, .large])
@@ -92,7 +92,7 @@ struct CalendarView: View {
             .fontWeight(.semibold)
             .foregroundStyle(Color.recordTextPrimary)
             .buttonStyle(.plain)
-            .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: 14))
+            .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
         }
     }
 
@@ -134,9 +134,9 @@ struct CalendarView: View {
         .font(.caption)
         .fontWeight(.semibold)
         .foregroundStyle(text2)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(background, in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, .recordSpacingS)
+        .padding(.vertical, .recordSpacingS)
+        .background(background, in: RoundedRectangle(cornerRadius: .recordRadiusM))
     }
 
     // MARK: - Weekday header
@@ -201,6 +201,7 @@ struct CalendarView: View {
                     dotsRow(for: dayRecords, isSelected: isSelected)
                 }
                 .frame(width: 50, height: 42)
+                // 원형 선택 표시 전용, 카드 반경 스케일과 무관
                 .background(isSelected ? Color.recordTextPrimary : .clear, in: RoundedRectangle(cornerRadius: 21))
             }
             .buttonStyle(.plain)
@@ -271,9 +272,9 @@ private struct MonthYearPickerView: View {
                 }
                 .fontWeight(.semibold)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 20)
-            .padding(.bottom, 4)
+            .padding(.horizontal, .recordSpacingXL)
+            .padding(.top, .recordSpacingL)
+            .padding(.bottom, .recordSpacingXS)
 
             HStack(spacing: 0) {
                 Picker("연도", selection: $year) {

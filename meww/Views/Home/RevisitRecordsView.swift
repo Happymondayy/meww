@@ -75,7 +75,7 @@ struct RevisitRecordsView: View {
             }
         }
         .listStyle(.plain)
-        .contentMargins(.horizontal, 24, for: .scrollContent)
+        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
         .navigationTitle("다시 보고 싶은 기록")
         .navigationBarTitleDisplayMode(.inline)
         .alert("새 폴더", isPresented: $showNewFolderAlert) {
@@ -128,16 +128,16 @@ struct RevisitRecordsView: View {
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.recordTabInactive)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
+                        .padding(.horizontal, .recordSpacingM)
+                        .padding(.vertical, .recordSpacingS)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
+                            RoundedRectangle(cornerRadius: .recordRadiusM)
                                 .stroke(Color.recordDragHandle, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.borderless)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, .recordSpacingXS)
         }
     }
 
@@ -146,11 +146,11 @@ struct RevisitRecordsView: View {
             .font(.caption)
             .fontWeight(.semibold)
             .foregroundStyle(isSelected ? .white : Color.recordFilterInactiveText)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.horizontal, .recordSpacingM)
+            .padding(.vertical, .recordSpacingS)
             .background(
                 isSelected ? Color.recordFilterActiveBackground : Color.recordFilterInactiveBackground,
-                in: RoundedRectangle(cornerRadius: 14)
+                in: RoundedRectangle(cornerRadius: .recordRadiusM)
             )
     }
 
@@ -171,7 +171,7 @@ struct RevisitRecordsView: View {
                 .foregroundStyle(Color.recordTextSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        .padding(.top, .recordSpacingXXL)
     }
 
     // MARK: - Folder actions

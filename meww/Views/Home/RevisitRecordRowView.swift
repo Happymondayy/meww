@@ -16,17 +16,19 @@ struct RevisitRecordRowView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: .recordRadiusXS)
                 .fill(Color.recordPlaceholderArt)
                 .overlay {
                     if let artworkURL = record.artworkURL {
                         AsyncImage(url: artworkURL) { image in
                             image.resizable().scaledToFill()
+                                .frame(width: 52, height: 52)
                         } placeholder: {
                             Image(systemName: record.category.systemImage)
                                 .foregroundStyle(.white.opacity(0.85))
+                                .frame(width: 52, height: 52)
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .clipShape(RoundedRectangle(cornerRadius: .recordRadiusXS))
                     } else {
                         Image(systemName: record.category.systemImage)
                             .foregroundStyle(.white.opacity(0.85))
@@ -58,11 +60,11 @@ struct RevisitRecordRowView: View {
             Button(action: onTapFolderIcon) {
                 Image(systemName: "folder")
                     .foregroundStyle(Color.recordTextSecondary)
-                    .padding(8)
+                    .padding(.recordSpacingS)
             }
             .buttonStyle(.borderless)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, .recordSpacingS)
     }
 }
 
