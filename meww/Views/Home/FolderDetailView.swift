@@ -39,9 +39,7 @@ struct FolderDetailView: View {
                     Button {
                         selectedRecord = record
                     } label: {
-                        RevisitRecordRowView(record: record) {
-                            recordPendingFolderAssignment = record
-                        }
+                        RevisitRecordRowView(record: record)
                     }
                     .buttonStyle(.borderless)
                     .listRowInsets(EdgeInsets())

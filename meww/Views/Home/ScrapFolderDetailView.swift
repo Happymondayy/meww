@@ -133,14 +133,6 @@ struct ScrapFolderDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
-
-            Button {
-                recordPendingFolderAssignment = record
-            } label: {
-                Image(systemName: "folder")
-                    .foregroundStyle(Color.recordTextSecondary)
-            }
-            .buttonStyle(.borderless)
         }
         .padding(.recordSpacingL)
         .background(Color.recordScrapCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
