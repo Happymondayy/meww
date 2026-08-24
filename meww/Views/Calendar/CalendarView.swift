@@ -13,8 +13,8 @@ import SwiftData
 /// 월별 리스트(HomeView)만으로는 날짜 경계가 안 보여서 기록이 실제보다 많아 보인다는 피드백이
 /// 있었다 — 이 화면은 요일별 그리드로 날짜 경계를 보여주고, 기록이 있는 날엔 카테고리별 점을
 /// 찍어 한눈에 훑을 수 있게 한다. Figma엔 없지만 여러 달을 오갈 방법이 필요해서 월 제목을
-/// 탭하면 연/월 피커가 뜨고, 옆에 이전/다음 버튼도 뒀다 — Figma의 "마이" 버튼은 아직 프로필
-/// 화면이 없어 뺐다.
+/// 탭하면 연/월 피커가 뜨고, 옆에 이전/다음 버튼도 뒀다. Figma의 "마이" 버튼(node 166:2)은
+/// 이전/다음 버튼 옆에 그대로 뒀다 — 탭 바에는 넣지 않기로 했다.
 struct CalendarView: View {
     @Query private var records: [Record]
 
@@ -24,6 +24,7 @@ struct CalendarView: View {
     @State private var highlightedDate = Calendar.current.startOfDay(for: .now)
     @State private var presentedDay: SelectedDay?
     @State private var showMonthPicker = false
+    @State private var showMyPage = false
 
     private let calendar = Calendar.current
     private let weekdaySymbols = ["일", "월", "화", "수", "목", "금", "토"]
@@ -49,6 +50,9 @@ struct CalendarView: View {
         .sheet(isPresented: $showMonthPicker) {
             MonthYearPickerView(selection: $displayedMonth)
                 .presentationDetents([.height(280)])
+        }
+        .navigationDestination(isPresented: $showMyPage) {
+            MyPageView()
         }
     }
 
@@ -93,6 +97,16 @@ struct CalendarView: View {
             .foregroundStyle(Color.recordTextPrimary)
             .buttonStyle(.plain)
             .background(Color.recordFilterInactiveBackground, in: RoundedRectangle(cornerRadius: .recordRadiusM))
+
+            Button {
+                showMyPage = true
+            } label: {
+                Image(systemName: "person.crop.circle")
+                    .font(.title3)
+                    .foregroundStyle(Color.recordTextPrimary)
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, .recordSpacingXS)
         }
     }
 
