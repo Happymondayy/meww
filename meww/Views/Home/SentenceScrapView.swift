@@ -49,16 +49,19 @@ struct SentenceScrapView: View {
             }
             .listRowInsets(EdgeInsets())
             .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
 
             if unclassifiedScraps.isEmpty {
                 emptyState
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             } else {
                 ForEach(unclassifiedScraps) { record in
                     scrapCard(record)
                         .listRowInsets(EdgeInsets(top: .recordSpacingXS, leading: 0, bottom: .recordSpacingXS, trailing: 0))
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
                                 unscrap(record)
