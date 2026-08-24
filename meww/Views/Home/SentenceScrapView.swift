@@ -25,6 +25,9 @@ struct SentenceScrapView: View {
     @State private var recordPendingFolderAssignment: Record?
     @State private var showNewFolderAlert = false
     @State private var newFolderName = ""
+    @State private var folderPendingRename: Folder?
+    @State private var renameFolderName = ""
+    @State private var folderPendingDeletion: Folder?
 
     private var scraps: [Record] {
         records.filter { $0.isScrapped && !$0.comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -65,6 +68,30 @@ struct SentenceScrapView: View {
             Button("취소", role: .cancel) { newFolderName = "" }
             Button("만들기") { createFolder() }
         }
+        .alert(
+            "폴더 이름 변경",
+            isPresented: Binding(
+                get: { folderPendingRename != nil },
+                set: { if !$0 { folderPendingRename = nil } }
+            )
+        ) {
+            TextField("폴더 이름", text: $renameFolderName)
+            Button("취소", role: .cancel) { folderPendingRename = nil }
+            Button("변경") { renameFolder() }
+        }
+        .confirmationDialog(
+            "이 폴더를 삭제할까요?",
+            isPresented: Binding(
+                get: { folderPendingDeletion != nil },
+                set: { if !$0 { folderPendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("삭제", role: .destructive) { deleteFolder() }
+            Button("취소", role: .cancel) { folderPendingDeletion = nil }
+        } message: {
+            Text("폴더 안의 기록은 삭제되지 않고 '전체'로 이동해요.")
+        }
         .confirmationDialog(
             "폴더 선택",
             isPresented: Binding(
@@ -92,15 +119,28 @@ struct SentenceScrapView: View {
     private var folderChipRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                folderChipLabel(title: "📁 전체 \(unclassifiedScraps.count)", isSelected: true)
+                folderChipLabel(title: "전체 \(unclassifiedScraps.count)", isSelected: true)
 
                 ForEach(folders) { folder in
                     NavigationLink {
                         ScrapFolderDetailView(folder: folder)
                     } label: {
-                        folderChipLabel(title: "📁 \(folder.name) \(count(in: folder))", isSelected: false)
+                        folderChipLabel(title: "\(folder.name) \(count(in: folder))", isSelected: false)
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            renameFolderName = folder.name
+                            folderPendingRename = folder
+                        } label: {
+                            Label("이름 변경", systemImage: "pencil")
+                        }
+                        Button(role: .destructive) {
+                            folderPendingDeletion = folder
+                        } label: {
+                            Label("삭제", systemImage: "trash")
+                        }
+                    }
                 }
 
                 Button {
@@ -216,6 +256,24 @@ struct SentenceScrapView: View {
         record.folder = folder
         try? modelContext.save()
         recordPendingFolderAssignment = nil
+    }
+
+    private func renameFolder() {
+        let trimmed = renameFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let folder = folderPendingRename, !trimmed.isEmpty else {
+            folderPendingRename = nil
+            return
+        }
+        folder.name = trimmed
+        try? modelContext.save()
+        folderPendingRename = nil
+    }
+
+    private func deleteFolder() {
+        guard let folder = folderPendingDeletion else { return }
+        modelContext.delete(folder)
+        try? modelContext.save()
+        folderPendingDeletion = nil
     }
 }
 

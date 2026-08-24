@@ -13,6 +13,7 @@ import SwiftData
 /// 같은 `Folder`를 공유하지만, 스크랩 카드 스타일로 보여준다는 점만 다르다.
 struct ScrapFolderDetailView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: \Record.recordedAt, order: .reverse) private var records: [Record]
     @Query(sort: \Folder.createdAt) private var folders: [Folder]
 
@@ -20,6 +21,9 @@ struct ScrapFolderDetailView: View {
 
     @State private var selectedRecord: Record?
     @State private var recordPendingFolderAssignment: Record?
+    @State private var showRenameAlert = false
+    @State private var renameFolderName = ""
+    @State private var showDeleteConfirmation = false
 
     private var folderScraps: [Record] {
         records.filter {
@@ -46,6 +50,40 @@ struct ScrapFolderDetailView: View {
         }
         .navigationTitle(folder.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        renameFolderName = folder.name
+                        showRenameAlert = true
+                    } label: {
+                        Label("이름 변경", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Label("폴더 삭제", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
+        }
+        .alert("폴더 이름 변경", isPresented: $showRenameAlert) {
+            TextField("폴더 이름", text: $renameFolderName)
+            Button("취소", role: .cancel) {}
+            Button("변경") { renameFolder() }
+        }
+        .confirmationDialog(
+            "이 폴더를 삭제할까요?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("삭제", role: .destructive) { deleteFolder() }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("폴더 안의 기록은 삭제되지 않고 '전체'로 이동해요.")
+        }
         .confirmationDialog(
             "폴더 선택",
             isPresented: Binding(
@@ -134,6 +172,19 @@ struct ScrapFolderDetailView: View {
         record.folder = newFolder
         try? modelContext.save()
         recordPendingFolderAssignment = nil
+    }
+
+    private func renameFolder() {
+        let trimmed = renameFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        folder.name = trimmed
+        try? modelContext.save()
+    }
+
+    private func deleteFolder() {
+        modelContext.delete(folder)
+        try? modelContext.save()
+        dismiss()
     }
 }
 
