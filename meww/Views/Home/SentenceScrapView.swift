@@ -39,28 +39,38 @@ struct SentenceScrapView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        List {
+            Section {
                 Text("내가 밑줄 그은 문장들만 모아봤어요")
                     .font(.footnote)
                     .foregroundStyle(Color.recordTabInactive)
 
                 folderChipRow
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
 
-                if unclassifiedScraps.isEmpty {
-                    emptyState
-                } else {
-                    VStack(spacing: 12) {
-                        ForEach(unclassifiedScraps) { record in
-                            scrapCard(record)
+            if unclassifiedScraps.isEmpty {
+                emptyState
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+            } else {
+                ForEach(unclassifiedScraps) { record in
+                    scrapCard(record)
+                        .listRowInsets(EdgeInsets(top: .recordSpacingXS, leading: 0, bottom: .recordSpacingXS, trailing: 0))
+                        .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                unscrap(record)
+                            } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
                         }
-                    }
                 }
             }
-            .padding(.horizontal, .recordSpacingXL)
-            .padding(.top, .recordSpacingXL)
-            .padding(.bottom, .recordSpacingXL)
         }
+        .listStyle(.plain)
+        .contentMargins(.all, .recordSpacingXL, for: .scrollContent)
         .navigationTitle("문장 스크랩")
         .navigationBarTitleDisplayMode(.inline)
         .alert("새 폴더", isPresented: $showNewFolderAlert) {
@@ -241,6 +251,12 @@ struct SentenceScrapView: View {
         guard !trimmed.isEmpty else { return }
         let folder = Folder(name: trimmed)
         modelContext.insert(folder)
+    }
+
+    /// 스크랩 목록에서만 지운다 — 기록 자체(코멘트 포함)는 그대로 두고 `isScrapped`만 끈다.
+    private func unscrap(_ record: Record) {
+        record.isScrapped = false
+        try? modelContext.save()
     }
 
     private func assignFolder(_ folder: Folder?) {

@@ -34,20 +34,28 @@ struct ScrapFolderDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                if folderScraps.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(folderScraps) { record in
-                        scrapCard(record)
-                    }
+        List {
+            if folderScraps.isEmpty {
+                emptyState
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+            } else {
+                ForEach(folderScraps) { record in
+                    scrapCard(record)
+                        .listRowInsets(EdgeInsets(top: .recordSpacingXS, leading: 0, bottom: .recordSpacingXS, trailing: 0))
+                        .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                unscrap(record)
+                            } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
+                        }
                 }
             }
-            .padding(.horizontal, .recordSpacingXL)
-            .padding(.top, .recordSpacingXL)
-            .padding(.bottom, .recordSpacingXL)
         }
+        .listStyle(.plain)
+        .contentMargins(.all, .recordSpacingXL, for: .scrollContent)
         .navigationTitle(folder.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -157,6 +165,12 @@ struct ScrapFolderDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, .recordSpacingXXL)
+    }
+
+    /// 스크랩 목록에서만 지운다 — 기록 자체(코멘트 포함)는 그대로 두고 `isScrapped`만 끈다.
+    private func unscrap(_ record: Record) {
+        record.isScrapped = false
+        try? modelContext.save()
     }
 
     private func assignFolder(_ newFolder: Folder?) {
