@@ -55,6 +55,40 @@ extension Array where Element == Record {
             .map { (month: $0.key, records: $0.value.sorted { $0.recordedAt > $1.recordedAt }) }
             .sorted { $0.month > $1.month }
     }
+
+    /// 오늘 기준으로 거꾸로 세는 연속 기록 일수. 오늘 아직 기록이 없으면 어제부터 센다 —
+    /// 자정 넘기기 전까진 스트릭이 끊긴 것처럼 보이면 안 되기 때문이다.
+    func currentStreak(asOf today: Date = .now, calendar: Calendar = .current) -> Int {
+        let recordedDays = Set(map { calendar.startOfDay(for: $0.recordedAt) })
+        var day = calendar.startOfDay(for: today)
+        if !recordedDays.contains(day) {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: day) else { return 0 }
+            day = yesterday
+        }
+
+        var streak = 0
+        while recordedDays.contains(day) {
+            streak += 1
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: day) else { break }
+            day = previousDay
+        }
+        return streak
+    }
+
+    /// 지금까지 가장 길게 이어졌던 연속 기록 일수.
+    func longestStreak(calendar: Calendar = .current) -> Int {
+        let recordedDays = Set(map { calendar.startOfDay(for: $0.recordedAt) }).sorted()
+        guard !recordedDays.isEmpty else { return 0 }
+
+        var longest = 1
+        var current = 1
+        for index in 1..<recordedDays.count {
+            let isConsecutive = calendar.date(byAdding: .day, value: 1, to: recordedDays[index - 1]) == recordedDays[index]
+            current = isConsecutive ? current + 1 : 1
+            longest = Swift.max(longest, current)
+        }
+        return longest
+    }
 }
 
 extension Date {

@@ -34,11 +34,7 @@ struct AllRecordsView: View {
                     .listRowSeparator(.hidden)
             }
 
-            if monthGroups.isEmpty {
-                emptyState
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-            } else {
+            if !monthGroups.isEmpty {
                 ForEach(monthGroups, id: \.month) { group in
                     Section {
                         Text(group.month.koreanMonthTitle)
@@ -71,6 +67,11 @@ struct AllRecordsView: View {
         }
         .listStyle(.plain)
         .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
+        .overlay {
+            if monthGroups.isEmpty {
+                emptyState
+            }
+        }
         .navigationTitle("전체 기록")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "제목·아티스트 검색")
@@ -156,15 +157,13 @@ struct AllRecordsView: View {
         VStack(spacing: 8) {
             let isSearching = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             Image(systemName: isSearching ? "magnifyingglass" : "tray")
-                .font(.title)
+                .font(.title3)
                 .foregroundStyle(Color.recordTextSecondary)
             Text(isSearching ? "검색 결과가 없어요" : "기록이 없어요")
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.recordTextSecondary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, .recordSpacingXXL)
     }
 }
 

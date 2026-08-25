@@ -108,11 +108,17 @@ struct TasteRecommendationView: View {
     @ViewBuilder
     private var content: some View {
         if profile.favoriteCreators.isEmpty {
-            ContentUnavailableView(
-                "아직 취향 데이터가 부족해요",
-                systemImage: "sparkles",
-                description: Text("별점 4점 이상인 기록이 쌓이면 아티스트/저자별 추천이 만들어져요.")
-            )
+            VStack(spacing: 8) {
+                Text("아직 취향 데이터가 부족해요")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.recordTextSecondary)
+                Text("별점 4점 이상인 기록이 쌓이면 아티스트/저자별 추천이 만들어져요.")
+                    .font(.caption)
+                    .foregroundStyle(Color.recordTextSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
             .padding(.top, .recordSpacingXXL)
         } else if creatorEngine.isLoading && creatorEngine.sections.isEmpty {
             loadingSkeleton

@@ -8,8 +8,8 @@
 import SwiftUI
 
 /// 취향 추천 카드 하나. 아직 기록되지 않은 항목이라 표지는 검색해서 채운 것(`card.artworkURL`)이고,
-/// 없으면 다른 카드처럼 아이콘 플레이스홀더로 대체한다. 탭하면 Apple Music/Google Books
-/// 상세 페이지(`card.linkURL`)로 연결한다 — 마음에 들어도 더 볼 방법이 없었던 걸 보완한다.
+/// 없으면 다른 카드처럼 아이콘 플레이스홀더로 대체한다. 탭하면 음악은 Apple Music 상세 페이지,
+/// 독서는 예스24 검색 결과(`card.linkURL`)로 연결한다 — 마음에 들어도 더 볼 방법이 없었던 걸 보완한다.
 struct TasteRecommendationCardView: View {
     let card: TasteRecommendationCard
     /// 더보기 화면에서만 추천 이유를 같이 보여준다 — 홈 화면 미리보기는 짧게 유지.

@@ -13,7 +13,8 @@ struct BookSearchResult: Identifiable {
     let title: String
     let authorName: String
     let coverURL: URL?
-    /// Google Books 상세 페이지 링크 — 탭하면 여기로 연결한다.
+    /// 예스24에서 책 제목으로 검색한 결과 페이지 — 탭하면 여기로 연결한다. 공식 상품 링크 API가
+    /// 없어서 정확한 상품 페이지 대신 검색 결과로 보낸다.
     let linkURL: URL?
 }
 
@@ -77,19 +78,27 @@ final class BookSearchService: ObservableObject {
 
         return (response.items ?? []).map { item in
             let info = item.volumeInfo
-            // Google Books는 표지·상세 페이지 URL을 http로 내려줄 때가 있어 ATS 차단을 피하려 https로 바꾼다.
+            // Google Books는 표지 URL을 http로 내려줄 때가 있어 ATS 차단을 피하려 https로 바꾼다.
             let thumbnail = (info.imageLinks?.thumbnail ?? info.imageLinks?.smallThumbnail)?
                 .replacingOccurrences(of: "http://", with: "https://")
-            let infoLink = info.infoLink?.replacingOccurrences(of: "http://", with: "https://")
 
             return BookSearchResult(
                 id: item.id,
                 title: info.title,
                 authorName: (info.authors ?? []).joined(separator: ", "),
                 coverURL: thumbnail.flatMap(URL.init(string:)),
-                linkURL: infoLink.flatMap(URL.init(string:))
+                linkURL: Self.yes24SearchURL(for: info.title)
             )
         }
+    }
+
+    private static func yes24SearchURL(for title: String) -> URL? {
+        var components = URLComponents(string: "https://www.yes24.com/Product/Search")!
+        components.queryItems = [
+            URLQueryItem(name: "domain", value: "BOOK"),
+            URLQueryItem(name: "query", value: title),
+        ]
+        return components.url
     }
 }
 
@@ -106,7 +115,6 @@ private struct VolumeInfo: Decodable {
     let title: String
     let authors: [String]?
     let imageLinks: ImageLinks?
-    let infoLink: String?
 }
 
 private struct ImageLinks: Decodable {

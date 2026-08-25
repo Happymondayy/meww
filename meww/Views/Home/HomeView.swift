@@ -24,6 +24,7 @@ struct HomeView: View {
     @State private var showSentenceScrap = false
     @State private var showRevisitRecords = false
     @State private var showAllRecords = false
+    @State private var showMyPage = false
     @State private var selectedRecord: Record?
 
     /// 홈엔 최근 기록만 미리 보여준다 — 전부는 "전체보기"로 들어간 `AllRecordsView`에서 본다.
@@ -34,7 +35,12 @@ struct HomeView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 20) {
-                    headerSummary
+                    VStack(alignment: .leading, spacing: 6) {
+                        headerSummary
+                        if isNicknameMissing {
+                            nicknameNudge
+                        }
+                    }
                     quickAccessRow
                     tasteHighlightsSection
                     categoryFilterRow
@@ -52,6 +58,7 @@ struct HomeView: View {
                     Text("아직 기록이 없어요")
                         .font(.caption)
                         .foregroundStyle(Color.recordTextSecondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: .recordSpacingXL, trailing: 0))
                         .listRowSeparator(.hidden)
                 } else {
@@ -89,6 +96,9 @@ struct HomeView: View {
         .navigationDestination(isPresented: $showAllRecords) {
             AllRecordsView(initialCategory: selectedCategory)
         }
+        .navigationDestination(isPresented: $showMyPage) {
+            MyPageView()
+        }
         .sheet(item: $selectedRecord) { record in
             RecordDetailView(record: record)
                 .presentationDetents([.fraction(0.72), .large])
@@ -114,6 +124,10 @@ struct HomeView: View {
         return trimmed.isEmpty ? "" : "\(trimmed)님, "
     }
 
+    private var isNicknameMissing: Bool {
+        nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var headerSummaryText: String {
         switch selectedCategory {
         case nil:
@@ -134,6 +148,22 @@ struct HomeView: View {
             .foregroundStyle(Color.recordTextPrimary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, .recordSpacingM)
+    }
+
+    /// 닉네임이 비어있을 때 헤더 인사말 바로 아래에 붙는 유도 문구 — 탭하면 "마이"로 이동해 바로 설정할 수 있다.
+    private var nicknameNudge: some View {
+        Button {
+            showMyPage = true
+        } label: {
+            HStack(spacing: 4) {
+                Text("닉네임을 설정해보세요")
+                Image(systemName: "chevron.right")
+            }
+            .font(.caption)
+            .fontWeight(.semibold)
+            .foregroundStyle(Color.recordTextSecondary)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Taste recommendations (Gemini)

@@ -28,12 +28,10 @@ struct MyPageView: View {
 
     var body: some View {
         List {
-            Section {
-                nicknameHeader
-            }
-            .listRowInsets(EdgeInsets())
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
+            nicknameHeader
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
 
             Section {
                 NavigationLink {
@@ -85,8 +83,7 @@ struct MyPageView: View {
                 sectionHeader("설정")
             }
         }
-        .listStyle(.plain)
-        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
+        .listStyle(.insetGrouped)
         .navigationTitle("마이")
         .navigationBarTitleDisplayMode(.inline)
         .alert("닉네임 설정", isPresented: $showNicknameAlert) {
@@ -139,8 +136,11 @@ struct MyPageView: View {
     }
 
     private func menuRow(icon: String, title: String) -> some View {
-        HStack(spacing: .recordSpacingS) {
+        HStack(spacing: .recordSpacingM) {
             Text(icon)
+                .font(.footnote)
+                .frame(width: 28, height: 28)
+                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
             Text(title)
                 .foregroundStyle(Color.recordTextPrimary)
         }

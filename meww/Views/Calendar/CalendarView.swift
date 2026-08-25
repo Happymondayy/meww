@@ -32,7 +32,10 @@ struct CalendarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
+            weeklyStreakSection
+                .padding(.bottom, .recordSpacingL)
             categoryCountRow
+                .padding(.bottom, .recordSpacingS)
             VStack(alignment: .leading, spacing: 4) {
                 weekdayHeader
                 calendarGrid
@@ -102,7 +105,7 @@ struct CalendarView: View {
                 showMyPage = true
             } label: {
                 Image(systemName: "person.crop.circle")
-                    .font(.title3)
+                    .font(.title2)
                     .foregroundStyle(Color.recordTextPrimary)
             }
             .buttonStyle(.plain)
@@ -151,6 +154,92 @@ struct CalendarView: View {
         .padding(.horizontal, .recordSpacingS)
         .padding(.vertical, .recordSpacingS)
         .background(background, in: RoundedRectangle(cornerRadius: .recordRadiusM))
+    }
+
+    // MARK: - Weekly streak (듀오링고 스타일 — 실제 오늘 기준 이번 주, `displayedMonth`와 무관하다)
+
+    private var currentWeekDates: [Date] {
+        let today = calendar.startOfDay(for: .now)
+        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: today) else { return [] }
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekInterval.start) }
+    }
+
+    private func hasRecord(on date: Date) -> Bool {
+        records.contains { calendar.isDate($0.recordedAt, inSameDayAs: date) }
+    }
+
+    private var weeklyStreakSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                ForEach(currentWeekDates, id: \.self) { date in
+                    weeklyStreakDay(date)
+                }
+            }
+
+            streakCard
+        }
+    }
+
+    private func weeklyStreakDay(_ date: Date) -> some View {
+        let isToday = calendar.isDateInToday(date)
+        let done = hasRecord(on: date)
+        let weekdayIndex = calendar.component(.weekday, from: date) - 1
+
+        return VStack(spacing: 4) {
+            Text(weekdaySymbols[weekdayIndex])
+                .font(.caption2)
+                .fontWeight(isToday ? .bold : .regular)
+                .foregroundStyle(isToday ? Color.recordTextPrimary : Color.recordTextSecondary)
+
+            ZStack {
+                Circle()
+                    .fill(done ? Color.recordAccentPink : Color.recordFilterInactiveBackground)
+                    .frame(width: 28, height: 28)
+
+                // 오늘인데 아직 기록이 없으면 불꽃 아이콘으로 "지금 하면 스트릭 이어짐"을 알려준다.
+                if done {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                } else if isToday {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Color.recordAccentPink)
+                }
+            }
+            .overlay {
+                if isToday {
+                    Circle().stroke(done ? .white : Color.recordAccentPink, lineWidth: 2)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// 연속 기록 일수 카드 — 오늘 기록이 없으면 "지금 시작해보세요" 쪽으로 문구가 바뀐다.
+    private var streakCard: some View {
+        let current = records.currentStreak()
+        let longest = records.longestStreak()
+
+        return HStack(spacing: .recordSpacingM) {
+            Image(systemName: "flame.fill")
+                .font(.title2)
+                .foregroundStyle(current > 0 ? Color.recordAccentPink : Color.recordTextSecondary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(current > 0 ? "\(current)일 연속 기록 중이에요" : "오늘부터 기록을 시작해보세요")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.recordTextPrimary)
+                Text("최고 기록 \(longest)일")
+                    .font(.caption)
+                    .foregroundStyle(Color.recordTextSecondary)
+            }
+
+            Spacer()
+        }
+        .padding(.recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
     }
 
     // MARK: - Weekday header
