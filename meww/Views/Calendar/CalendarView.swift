@@ -30,12 +30,10 @@ struct CalendarView: View {
     private let weekdaySymbols = ["일", "월", "화", "수", "목", "금", "토"]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: .recordSpacingXL) {
             header
             weeklyStreakSection
-                .padding(.bottom, .recordSpacingL)
             categoryCountRow
-                .padding(.bottom, .recordSpacingS)
             VStack(alignment: .leading, spacing: 4) {
                 weekdayHeader
                 calendarGrid
@@ -169,7 +167,7 @@ struct CalendarView: View {
     }
 
     private var weeklyStreakSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: .recordSpacingL) {
             HStack(spacing: 8) {
                 ForEach(currentWeekDates, id: \.self) { date in
                     weeklyStreakDay(date)
