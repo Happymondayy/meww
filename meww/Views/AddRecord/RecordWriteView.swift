@@ -141,6 +141,8 @@ struct RecordWriteView: View {
             DatePicker("", selection: $startedAt, in: ...recordedAt, displayedComponents: .date)
                 .labelsHidden()
                 .datePickerStyle(.compact)
+                .tint(Color.recordAccentPink)
+                .accentColor(Color.recordAccentPink)
         }
     }
 

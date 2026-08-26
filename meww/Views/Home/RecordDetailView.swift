@@ -158,6 +158,8 @@ struct RecordDetailView: View {
                 )
                 .labelsHidden()
                 .datePickerStyle(.compact)
+                .tint(Color.recordAccentPink)
+                .accentColor(Color.recordAccentPink)
             }
         } else if let readingPeriodDisplay = record.readingPeriodDisplay {
             Text(readingPeriodDisplay)
