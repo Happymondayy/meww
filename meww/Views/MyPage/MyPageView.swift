@@ -34,56 +34,57 @@ struct MyPageView: View {
                 .listRowBackground(Color.clear)
 
             Section {
-                NavigationLink {
-                    SentenceScrapView()
-                } label: {
-                    menuRow(icon: "📑", title: "문장 스크랩")
+                menuCard {
+                    menuRow(icon: "📑", title: "문장 스크랩") {
+                        SentenceScrapView()
+                    }
+                    menuDivider
+                    menuRow(icon: "❤️", title: "다시 보고 싶은 기록") {
+                        RevisitRecordsView()
+                    }
+                    menuDivider
+                    menuRow(icon: "📊", title: "취향 분석") {
+                        ComingSoonView(title: "취향 분석")
+                    }
                 }
-                NavigationLink {
-                    RevisitRecordsView()
-                } label: {
-                    menuRow(icon: "❤️", title: "다시 보고 싶은 기록")
-                }
-                NavigationLink {
-                    ComingSoonView(title: "취향 분석")
-                } label: {
-                    menuRow(icon: "📊", title: "취향 분석")
-                }
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             } header: {
                 sectionHeader("기록")
             }
 
             Section {
-                NavigationLink {
-                    ComingSoonView(title: "알림 설정")
-                } label: {
-                    menuRow(icon: "🔔", title: "알림 설정")
+                menuCard {
+                    menuRow(icon: "🔔", title: "알림 설정") {
+                        ComingSoonView(title: "알림 설정")
+                    }
+                    menuDivider
+                    menuRow(icon: "👤", title: "계정 관리") {
+                        AccountManagementView()
+                    }
+                    menuDivider
+                    menuRow(icon: "🔗", title: "API 연동 관리") {
+                        ComingSoonView(title: "API 연동 관리")
+                    }
+                    menuDivider
+                    menuRow(icon: "📤", title: "데이터 내보내기") {
+                        ComingSoonView(title: "데이터 내보내기")
+                    }
+                    menuDivider
+                    menuRow(icon: "ℹ️", title: "앱 정보") {
+                        ComingSoonView(title: "앱 정보")
+                    }
                 }
-                NavigationLink {
-                    AccountManagementView()
-                } label: {
-                    menuRow(icon: "👤", title: "계정 관리")
-                }
-                NavigationLink {
-                    ComingSoonView(title: "API 연동 관리")
-                } label: {
-                    menuRow(icon: "🔗", title: "API 연동 관리")
-                }
-                NavigationLink {
-                    ComingSoonView(title: "데이터 내보내기")
-                } label: {
-                    menuRow(icon: "📤", title: "데이터 내보내기")
-                }
-                NavigationLink {
-                    ComingSoonView(title: "앱 정보")
-                } label: {
-                    menuRow(icon: "ℹ️", title: "앱 정보")
-                }
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             } header: {
                 sectionHeader("설정")
             }
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.plain)
+        .contentMargins(.horizontal, .recordSpacingXL, for: .scrollContent)
         .navigationTitle("마이")
         .navigationBarTitleDisplayMode(.inline)
         .alert("닉네임 설정", isPresented: $showNicknameAlert) {
@@ -135,16 +136,47 @@ struct MyPageView: View {
             .foregroundStyle(Color.recordTextSecondary)
     }
 
-    private func menuRow(icon: String, title: String) -> some View {
-        HStack(spacing: .recordSpacingM) {
-            Text(icon)
-                .font(.footnote)
-                .frame(width: 28, height: 28)
-                .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusS))
-            Text(title)
-                .foregroundStyle(Color.recordTextPrimary)
+    /// 홈 화면 카드(`Color.recordCardBackground` + `.recordRadiusL`)와 같은 톤으로 메뉴 항목들을
+    /// 하나의 그룹으로 묶는다 — 시스템 기본 `.insetGrouped`의 회색 배경/흰 박스 대신 앱 전체가
+    /// 쓰는 카드 스타일에 맞춘다.
+    private func menuCard(@ViewBuilder content: () -> some View) -> some View {
+        VStack(spacing: 0) {
+            content()
         }
-        .padding(.vertical, .recordSpacingXS)
+        .padding(.horizontal, .recordSpacingL)
+        .background(Color.recordCardBackground, in: RoundedRectangle(cornerRadius: .recordRadiusL))
+    }
+
+    private var menuDivider: some View {
+        Rectangle()
+            .fill(Color.recordSeparator)
+            .frame(height: 1)
+    }
+
+    /// `NavigationLink`를 리스트 안에서 그대로 쓰면 시스템이 자동으로도 `>` 화살표를 붙여서
+    /// 닉네임 헤더(수동으로 그린 화살표)와 위치가 미묘하게 어긋난다 — 링크 자체는 투명하게
+    /// 숨기고, 화살표를 포함한 행 전체를 nicknameHeader와 똑같은 방식으로 직접 그린다.
+    private func menuRow(icon: String, title: String, @ViewBuilder destination: () -> some View) -> some View {
+        ZStack {
+            NavigationLink(destination: destination) { EmptyView() }
+                .opacity(0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            HStack(spacing: .recordSpacingM) {
+                Text(icon)
+                    .font(.footnote)
+                    .frame(width: 28, height: 28)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: .recordRadiusS))
+                Text(title)
+                    .foregroundStyle(Color.recordTextPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(Color.recordTextSecondary)
+            }
+        }
+        .padding(.vertical, .recordSpacingM)
+        .contentShape(Rectangle())
     }
 }
 
