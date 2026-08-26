@@ -38,6 +38,10 @@ struct RecordDetailView: View {
 
                 ratingRow
 
+                if record.category == .book {
+                    readingPeriodRow
+                }
+
                 if isEditing {
                     revisitPicker
                 } else {
@@ -131,6 +135,34 @@ struct RecordDetailView: View {
             Text(isEditing ? "(탭해서 별점 수정)" : record.recordedAtDisplay)
                 .font(.caption2)
                 .foregroundStyle(isEditing ? Color.recordHintText : Color.recordTextSecondary)
+        }
+    }
+
+    // MARK: - Reading period (book only)
+
+    @ViewBuilder
+    private var readingPeriodRow: some View {
+        if isEditing {
+            HStack(spacing: 6) {
+                Text("읽기 시작한 날")
+                    .font(.caption2)
+                    .foregroundStyle(Color.recordTextSecondary)
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { record.startedAt ?? record.recordedAt },
+                        set: { record.startedAt = $0 }
+                    ),
+                    in: ...record.recordedAt,
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .datePickerStyle(.compact)
+            }
+        } else if let readingPeriodDisplay = record.readingPeriodDisplay {
+            Text(readingPeriodDisplay)
+                .font(.caption2)
+                .foregroundStyle(Color.recordTextSecondary)
         }
     }
 

@@ -48,8 +48,11 @@ final class Record {
     var recommendedFor: String = ""
     /// "다시 듣고/읽고 싶어요"
     var wantsToRevisit: Bool
-    /// 기록시각
+    /// 기록시각 — 독서 기록에서는 완독일로도 쓰인다.
     var recordedAt: Date
+    /// 읽기 시작한 날 — 독서 기록에서만 입력받는다. `recordedAt`(완독일)과 짝을 이뤄
+    /// "며칠에 걸쳐 읽었는지"를 보여준다.
+    var startedAt: Date?
     /// Apple Music 앨범/트랙 아트워크 URL (문자열로 저장, SwiftData가 `URL`을 직접 지원하지 않음).
     var artworkURLString: String?
     /// "다시 보고 싶은 기록"을 정리하는 폴더 — 폴더가 삭제되면 nil로 돌아간다("전체").
@@ -103,6 +106,7 @@ final class Record {
         recommendedFor: String = "",
         wantsToRevisit: Bool = false,
         recordedAt: Date = .now,
+        startedAt: Date? = nil,
         artworkURL: URL? = nil
     ) {
         self.categoryRawValue = category.rawValue
@@ -115,6 +119,7 @@ final class Record {
         self.recommendedFor = recommendedFor
         self.wantsToRevisit = wantsToRevisit
         self.recordedAt = recordedAt
+        self.startedAt = startedAt
         self.artworkURLString = artworkURL?.absoluteString
     }
 }
