@@ -28,6 +28,7 @@ struct RecordWriteView: View {
     @State private var isScrapped = false
     @State private var summary = ""
     @State private var recommendedFor = ""
+    @State private var startedAt: Date
     @State private var didSave = false
 
     init(category: RecordCategory, title: String, creator: String, artworkURL: URL?, recordedAt: Date = .now) {
@@ -37,6 +38,7 @@ struct RecordWriteView: View {
         _title = State(initialValue: title)
         _creator = State(initialValue: creator)
         _isEditingItem = State(initialValue: title.isEmpty)
+        _startedAt = State(initialValue: recordedAt)
     }
 
     private var isValid: Bool {
@@ -48,6 +50,9 @@ struct RecordWriteView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 itemHeader
+                if category == .book {
+                    readingPeriodSection
+                }
                 ratingSection
                 revisitSection
                 commentSection
@@ -121,6 +126,23 @@ struct RecordWriteView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             isEditingItem = true
+        }
+    }
+
+    // MARK: - Reading period (book only)
+
+    private var readingPeriodSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("읽기 시작한 날")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.recordTextPrimary)
+
+            DatePicker("", selection: $startedAt, in: ...recordedAt, displayedComponents: .date)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .tint(Color.recordAccentPink)
+                .accentColor(Color.recordAccentPink)
         }
     }
 
@@ -284,6 +306,7 @@ struct RecordWriteView: View {
             recommendedFor: recommendedFor.trimmingCharacters(in: .whitespacesAndNewlines),
             wantsToRevisit: wantsToRevisit ?? false,
             recordedAt: recordedAt,
+            startedAt: category == .book ? startedAt : nil,
             artworkURL: artworkURL
         )
         modelContext.insert(record)

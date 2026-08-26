@@ -29,6 +29,23 @@ extension Record {
         Self.timeFormatter.string(from: recordedAt)
     }
 
+    /// e.g. "2026.05.03"
+    var startedAtCompact: String? {
+        startedAt.map { Self.recordedAtFormatter.string(from: $0) }
+    }
+
+    /// e.g. "2026.04.28 ~ 2026.05.03 · 6일간 읽음" — 독서 기록 상세보기용.
+    /// `startedAt`이 없으면(음악, 또는 시작일을 안 남긴 독서 기록) nil.
+    var readingPeriodDisplay: String? {
+        guard category == .book, let startedAt else { return nil }
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: startedAt)
+        let end = calendar.startOfDay(for: recordedAt)
+        let days = max(1, (calendar.dateComponents([.day], from: start, to: end).day ?? 0) + 1)
+        let startText = Self.recordedAtFormatter.string(from: startedAt)
+        return "\(startText) ~ \(recordedAtCompact) · \(days)일간 읽음"
+    }
+
     private static let recordedAtFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
