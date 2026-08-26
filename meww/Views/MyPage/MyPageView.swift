@@ -35,22 +35,16 @@ struct MyPageView: View {
 
             Section {
                 menuCard {
-                    NavigationLink {
+                    menuRow(icon: "📑", title: "문장 스크랩") {
                         SentenceScrapView()
-                    } label: {
-                        menuRow(icon: "📑", title: "문장 스크랩")
                     }
                     menuDivider
-                    NavigationLink {
+                    menuRow(icon: "❤️", title: "다시 보고 싶은 기록") {
                         RevisitRecordsView()
-                    } label: {
-                        menuRow(icon: "❤️", title: "다시 보고 싶은 기록")
                     }
                     menuDivider
-                    NavigationLink {
+                    menuRow(icon: "📊", title: "취향 분석") {
                         ComingSoonView(title: "취향 분석")
-                    } label: {
-                        menuRow(icon: "📊", title: "취향 분석")
                     }
                 }
                 .listRowInsets(EdgeInsets())
@@ -62,34 +56,24 @@ struct MyPageView: View {
 
             Section {
                 menuCard {
-                    NavigationLink {
+                    menuRow(icon: "🔔", title: "알림 설정") {
                         ComingSoonView(title: "알림 설정")
-                    } label: {
-                        menuRow(icon: "🔔", title: "알림 설정")
                     }
                     menuDivider
-                    NavigationLink {
+                    menuRow(icon: "👤", title: "계정 관리") {
                         AccountManagementView()
-                    } label: {
-                        menuRow(icon: "👤", title: "계정 관리")
                     }
                     menuDivider
-                    NavigationLink {
+                    menuRow(icon: "🔗", title: "API 연동 관리") {
                         ComingSoonView(title: "API 연동 관리")
-                    } label: {
-                        menuRow(icon: "🔗", title: "API 연동 관리")
                     }
                     menuDivider
-                    NavigationLink {
+                    menuRow(icon: "📤", title: "데이터 내보내기") {
                         ComingSoonView(title: "데이터 내보내기")
-                    } label: {
-                        menuRow(icon: "📤", title: "데이터 내보내기")
                     }
                     menuDivider
-                    NavigationLink {
+                    menuRow(icon: "ℹ️", title: "앱 정보") {
                         ComingSoonView(title: "앱 정보")
-                    } label: {
-                        menuRow(icon: "ℹ️", title: "앱 정보")
                     }
                 }
                 .listRowInsets(EdgeInsets())
@@ -169,18 +153,27 @@ struct MyPageView: View {
             .frame(height: 1)
     }
 
-    private func menuRow(icon: String, title: String) -> some View {
-        HStack(spacing: .recordSpacingM) {
-            Text(icon)
-                .font(.footnote)
-                .frame(width: 28, height: 28)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: .recordRadiusS))
-            Text(title)
-                .foregroundStyle(Color.recordTextPrimary)
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(Color.recordTextSecondary)
+    /// `NavigationLink`를 리스트 안에서 그대로 쓰면 시스템이 자동으로도 `>` 화살표를 붙여서
+    /// 닉네임 헤더(수동으로 그린 화살표)와 위치가 미묘하게 어긋난다 — 링크 자체는 투명하게
+    /// 숨기고, 화살표를 포함한 행 전체를 nicknameHeader와 똑같은 방식으로 직접 그린다.
+    private func menuRow(icon: String, title: String, @ViewBuilder destination: () -> some View) -> some View {
+        ZStack {
+            NavigationLink(destination: destination) { EmptyView() }
+                .opacity(0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            HStack(spacing: .recordSpacingM) {
+                Text(icon)
+                    .font(.footnote)
+                    .frame(width: 28, height: 28)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: .recordRadiusS))
+                Text(title)
+                    .foregroundStyle(Color.recordTextPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(Color.recordTextSecondary)
+            }
         }
         .padding(.vertical, .recordSpacingM)
         .contentShape(Rectangle())
